@@ -11,19 +11,14 @@ threadFunc1(void *arg)
 {
 	int loops = *((int* )arg);
 	int j,s;
-	for(j=0 ; j<loops ; j++){
-		rec: pthread_mutex_lock(&mtx1);
-		/* s = pthread_mutex_trylock(&mtx2);
-		if(s==EBUSY){
-			pthread_mutex_unlock(&mtx1);
-			goto rec;
-		}*/
+	//for(j=0 ; j<loops ; j++){
+		pthread_mutex_lock(&mtx1);
 		pthread_mutex_lock(&mtx2);
 		glob += 1;
 		printf("in t1 glob = %d\n", glob);
 		pthread_mutex_unlock(&mtx2);
 		pthread_mutex_unlock(&mtx1);
-	}
+	//}
 	return NULL;
 }
 
@@ -32,18 +27,14 @@ threadFunc2(void *arg)
 {
 	int loops = *((int* )arg);
 	int j,s;
-	for(j=0 ; j<loops ; j++){
-		rec: pthread_mutex_lock(&mtx2);
-		s=pthread_mutex_trylock(&mtx1);
-		if(s==EBUSY){
-			pthread_mutex_unlock(&mtx2);
-			goto rec;
-		}
+	//for(j=0 ; j<loops ; j++){
+		pthread_mutex_lock(&mtx2);
+		pthread_mutex_lock(&mtx1);
 		glob += 1;
 		printf("in t2 glob = %d\n", glob);
 		pthread_mutex_unlock(&mtx1);
 		pthread_mutex_unlock(&mtx2);
-	}
+	//}
 	return NULL;
 }
 

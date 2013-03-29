@@ -2,6 +2,10 @@ open Cil
 open List
 open Cfg
 open Printf
+open Set
+
+module StringSet = Set.Make(String) ;;
+
 let f=Frontc.parse "deadlock.cil.c" ();;
 computeFileCFG f;;
 
@@ -21,26 +25,38 @@ let rec globalFundec gf =
 	| _ -> [];;
 let funl = globalFundec f.globals;;
 
-let rec markMutexLock instrl = 
+let emptyset = StringSet.empty;;
+
+
+let rec markMutexLock instrl lockset= 
 	match instrl with
 	i::iistrl -> (match i with
-					| Call(_,exp,_,_) -> (*(printf "Call\n" ; markMutexLock iistrl;)*)(match exp with
-											AddrOf(_) -> (printf "AddrOf\n" ; markMutexLock iistrl;)
-											|AddrOfLabel(_) -> (printf "AddrOfLabel\n" ; markMutexLock iistrl;)
-											|CastE(_,_) -> (printf "CastE\n" ; markMutexLock iistrl;)
-											|Lval (lvar) -> (printf "Lval: %s\n" (match (fst lvar) with 
-																					Var(varinfo) -> varinfo.vname
-																					| _ -> "") ; markMutexLock iistrl;)
-											| _ -> (markMutexLock iistrl;))
-					| Set (_,_,_) -> (printf "Set\n" ; markMutexLock iistrl;)
-					| _ -> (markMutexLock iistrl;))
+					| Call(_,Lval(lvar),AddrOf(arg)::lst,_) -> 
+						(match ((fst lvar),(fst arg)) with 
+							(Var(varinfo),Var(arginfo)) -> 
+								begin 
+									printf "Lval: %s %s " varinfo.vname arginfo.vname; 
+									let newlockset = (
+										if varinfo.vname = "pthread_mutex_lock" then StringSet.add arginfo.vname lockset
+										else if varinfo.vname = "pthread_mutex_unlock" then StringSet.remove arginfo.vname lockset
+										else lockset
+									)
+									in(
+										List.iter (print_string) (StringSet.elements newlockset);	
+										printf "\n";									
+										markMutexLock iistrl newlockset;										
+									)									
+								end
+							| _ -> ())
+					| Set (_,_,_) -> (printf "Set\n" ; markMutexLock iistrl lockset;)
+					| _ -> (markMutexLock iistrl lockset;))
 	|_ -> ();;
 
 let rec processStmt stmts = 
 	match stmts with
 	s::xstmts -> begin 
 					match s.skind with
-				  	| Instr(instrl) -> (printf "Instr %d\n" (List.length instrl); markMutexLock instrl ;processStmt s.succs;)
+				  	| Instr(instrl) -> (printf "Instr %d\n" (List.length instrl); markMutexLock instrl emptyset ;processStmt s.succs;)
 				  	| Return(_,_) -> (printf "Return\n"; processStmt s.succs;)
 				  	| Goto (_,_) -> (printf "Goto\n"; processStmt s.succs;)
 				  	| ComputedGoto (_,_) -> (printf "ComputedGoto\n"; processStmt s.succs;)

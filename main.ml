@@ -11,7 +11,10 @@ let isMutexGvar gv =
 											| TNamed(typeinfo,_) -> true
 											| _ -> false)
 	|_ -> false;;
+let mutexl = List.filter (isMutexGvar) f.globals;;
 
-let l=f.globals in
-let mutexl = List.filter (isMutexGvar) l in
-printf "%d\n" (List.length mutexl);;
+let print_main_cfg = function
+	GFun(fundec , location) -> if(fundec.svar.vname="main") then printCfgFilename "dumbout" fundec
+	|_ -> ();;
+
+List.iter (print_main_cfg) f.globals;;

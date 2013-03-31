@@ -3,10 +3,14 @@ open List
 open Cfg
 open Printf
 open Set
+open Graph
+
 (* open Graph.Pack.Digraph *)
 
 module StringSet = Set.Make(String) ;;
-module Digraph = Graph.Pack.Digraph ;; 
+module StringDigraph = Imperative.Digraph.Abstract(String);; 
+
+(*module Digraph = Graph.Pack.Digraph ;; *)
 
 let f=Frontc.parse "deadlock.cil.c" ();;
 computeFileCFG f;;
@@ -28,8 +32,25 @@ let rec globalFundec gf =
 let funl = globalFundec f.globals;;
 
 let emptyset = StringSet.empty;;
+let locksetg = StringDigraph.create();;
 
-let lockgraph = Digraph.create();;
+let rec extractmtxvertex mtxl = 
+	match mtxl with
+	 GVar(varinfo , _,_)::xmtxl -> StringDigraph.V.create varinfo.vname::extractmtxvertex xmtxl
+	| _ -> []
+in let mtxvertexl = extractmtxvertex mutexl 
+in List.iter (StringDigraph.add_vertex locksetg ) mtxvertexl;;
+
+(* printf "vertex size %d\n" (StringDigraph.nb_vertex locksetg);; *)
+
+
+(*
+let rec create_vertex lst = 
+	match lst with
+	GVar(varinfo,_,_)::xlst -> ((Digraph.add_vertex lockgraph 1); create_vertex xlst;)
+	| _ -> [];;
+
+ let vertex_list = create_vertex mutexl;; *)
 
 let rec markMutexLock instrl lockset= 
 	match instrl with
@@ -40,7 +61,9 @@ let rec markMutexLock instrl lockset=
 								begin 
 									printf "Lval: %s %s " varinfo.vname arginfo.vname; 
 									let newlockset = (
-										if varinfo.vname = "pthread_mutex_lock" then StringSet.add arginfo.vname lockset
+										if varinfo.vname = "pthread_mutex_lock" then (
+											StringSet.add arginfo.vname lockset;
+											)
 										else if varinfo.vname = "pthread_mutex_unlock" then StringSet.remove arginfo.vname lockset
 										else lockset
 									)

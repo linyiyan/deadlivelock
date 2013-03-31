@@ -3,8 +3,10 @@ open List
 open Cfg
 open Printf
 open Set
+(* open Graph.Pack.Digraph *)
 
 module StringSet = Set.Make(String) ;;
+module Digraph = Graph.Pack.Digraph ;; 
 
 let f=Frontc.parse "deadlock.cil.c" ();;
 computeFileCFG f;;
@@ -27,6 +29,7 @@ let funl = globalFundec f.globals;;
 
 let emptyset = StringSet.empty;;
 
+let lockgraph = Digraph.create();;
 
 let rec markMutexLock instrl lockset= 
 	match instrl with

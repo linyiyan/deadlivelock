@@ -10,7 +10,11 @@ open Map
 module StringSet = Set.Make(String) ;;
 module StringDigraph = Imperative.Digraph.Abstract(String);; 
 module OP = Oper.I(StringDigraph);;
-module Str2Vertex = Map.Make(String);;
+module Tra = Traverse.Bfs(StringDigraph);;
+module StringMap = Map.Make(String);;
+module VertexSet = Set.Make(StringDigraph.V) ;;
+module VertexSetSet = Set.Make(VertexSet) ;;
+module EdgeMap = Map.Make(StringDigraph.E);;
 
 (*module Digraph = Graph.Pack.Digraph ;; *)
 
@@ -35,12 +39,14 @@ let funl = globalFundec f.globals;;
 
 let emptyset = StringSet.empty;;
 let locksetg = StringDigraph.create();;
-(*let str2vertexmap = Str2Vertex.empty;; *)
+let edge2acq = EdgeMap.empty;;
+(*let str2vertexmap = StringMap.empty;; *)
 
-(*let buildStr2Vertex g str = 
+(*
+let buildStringMap g str = 
 let v = StringDigraph.V.create str
-in let str2vertexmap = Str2Vertex.add str v str2vertexmap in ( 
-Str2Vertex.find str str2vertexmap;
+in let str2vertexmap = StringMap.add str v str2vertexmap in ( 
+StringMap.find str str2vertexmap;
 StringDigraph.add_vertex g v) ;;
 
 
@@ -50,7 +56,8 @@ let rec extractmtxvertex mtxl =
 	 GVar(varinfo , _,_)::xmtxl -> varinfo.vname::extractmtxvertex xmtxl;
 	| _ -> []
 in let mtxvertexl = extractmtxvertex mutexl 
-in List.iter (buildStr2Vertex locksetg) mtxvertexl;;*)
+in List.iter (buildStringMap locksetg) mtxvertexl;;
+*)
 
 let rec extractmtxvertex mtxl = 
 	match mtxl with
@@ -59,18 +66,14 @@ let rec extractmtxvertex mtxl =
 let mtxvertexl = extractmtxvertex mutexl;;
 
 let str2vertexmap = List.fold_left (fun str2vertexmap (str, v) -> 
-	Str2Vertex.add str v str2vertexmap) Str2Vertex.empty mtxvertexl;;
+	StringMap.add str v str2vertexmap) StringMap.empty mtxvertexl;;
 	
 let graphhelper g tpl = StringDigraph.add_vertex g (snd tpl);;
 	
 List.iter (graphhelper locksetg) mtxvertexl;;
 
 
-(* str2vertexmap = Str2Vertex.add str (StringDigraph.V.create str) str2vertexmap;; *)
-
-	
-
-
+(* str2vertexmap = StringMap.add str (StringDigraph.V.create str) str2vertexmap;; *)
 
 printf "vertex size %d\n" (StringDigraph.nb_vertex locksetg);; 
 
@@ -83,7 +86,7 @@ let rec create_vertex lst =
  let vertex_list = create_vertex mutexl;; *)
  
 let emitDep acquire hold = 
-	StringDigraph.add_edge locksetg (Str2Vertex.find hold str2vertexmap) (Str2Vertex.find acquire str2vertexmap);;
+	StringDigraph.add_edge locksetg (StringMap.find hold str2vertexmap) (StringMap.find acquire str2vertexmap);;
 
 let rec markMutexLock instrl lockset= 
 	match instrl with
@@ -142,10 +145,66 @@ let rec processFuns fl =
 		
 processFuns funl;;
 
-let g' = OP.transitive_closure ~reflexive:true locksetg;;
+exception Found of StringDigraph.V.t
+let find_string_vertex g i =
+    try
+      StringDigraph.iter_vertex (fun v -> if StringDigraph.V.label v = i then raise (Found v)) g;
+      raise Not_found
+    with Found v ->
+      v;;
 
+let g' = OP.transitive_closure locksetg;;
+let s = StringDigraph.V.label (StringMap.find "mtx1" str2vertexmap);;
+
+
+let rec search g src tgt cur k path res= 
+	if(k>0 && tgt=cur) then (VertexSetSet.add path res)
+	else if (k<=0) then (VertexSetSet.empty)
+	else (
+	let succlst = StringDigraph.succ g cur in
+	List.fold_left (fun res sc -> 
+		let path = VertexSet.add sc path in
+		search g src tgt sc (k-1) path res) res succlst
+	);;
 	
 
+
+StringDigraph.iter_edges (fun v0 v1 -> 
+	let v0' = find_string_vertex g' (StringDigraph.V.label v0) in 
+	let v1' = find_string_vertex g' (StringDigraph.V.label v1) in
+	if StringDigraph.mem_edge g' v1' v0' then  (** cycle between v0 and v1 exists in original graph *)
+	let accu = VertexSet.empty in
+	let res  = VertexSetSet.empty in
+	let newres = search locksetg v0 v1 v0 3 accu res in
+	(* printf "----path size %d\n" (List.length (VertexSetSet.elements newres)); *)
+	VertexSetSet.iter (fun b -> ( VertexSet.iter (fun a-> let a = StringDigraph.V.label a in printf "%s " a))  b) newres
+	
+	) locksetg;;	
+	
+	
+	
+(*let rec search g src tgt cur k path res= 
+	if(k>0 && tgt=cur) then (StringSetSet.add path res)
+	else if (k<=0) then (StringSetSet.empty)
+	else (
+	let succlst = StringDigraph.succ g cur in
+	List.fold_left (fun res sc -> 
+		let path = StringSet.add (StringDigraph.V.label sc) path in
+		search g src tgt sc (k-1) path res) res succlst
+	);;
+	
+StringDigraph.iter_edges (fun v0 v1 -> 
+	let v0' = find_string_vertex g' (StringDigraph.V.label v0) in 
+	let v1' = find_string_vertex g' (StringDigraph.V.label v1) in
+	if StringDigraph.mem_edge g' v1' v0' then  (** cycle between v0 and v1 exists in original graph *)
+	let accu = StringSet.empty in
+	let res  = StringSetSet.empty in
+	let newres = search locksetg v0 v1 v0 3 accu res in
+	(* printf "----path size %d\n" (List.length (VertexSetSet.elements newres)); *)
+	StringSetSet.iter (fun a-> let a = StringDigraph.V.label a in printf "") newres
+	
+	) locksetg;;	*)
+	
 (*
 let print_main_cfg = function
 	GFun(fundec , location) -> if(fundec.svar.vname="main") then printCfgFilename "dumbout" fundec

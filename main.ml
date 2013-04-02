@@ -12,6 +12,8 @@ open String
 module StringMap = Map.Make(String)
 module StringSet = Set.Make(String)
 module StringDigraph = Imperative.Digraph.Abstract(String)
+module VertexSet = Set.Make(StringDigraph.V) 
+module VertexSetSet = Set.Make(VertexSet) 
 module OP = Oper.I(StringDigraph)
 
 let f=Frontc.parse "deadlock.cil.c" () ;;
@@ -115,6 +117,23 @@ let rec processStmt stmts lockset acq_cache hold_cache vertex_cache locksetg=
 				   in acq_cache,hold_cache,vertex_cache,locksetg)
 		end
 	| _ -> acq_cache,hold_cache,vertex_cache,locksetg;;
+	
+exception Found of StringDigraph.V.t
+let find_string_vertex g i =
+    try
+      StringDigraph.iter_vertex (fun v -> if StringDigraph.V.label v = i then raise (Found v)) g;
+      raise Not_found
+    with Found v -> v;;
+	
+let rec search g src tgt cur k path res= 
+	if(k>0 && tgt=cur) then (VertexSetSet.add path res)
+	else if (k<=0) then (VertexSetSet.empty)
+	else (
+	let succlst = StringDigraph.succ g cur in
+	List.fold_left (fun res sc -> 
+		let path = VertexSet.add sc path in
+		search g src tgt sc (k-1) path res) res succlst
+	);;
 
 let funl = globalFundec f.globals in
 let rec processFuns fl acq_cache hold_cache vertex_cache locksetg= 
@@ -135,10 +154,36 @@ let rec processFuns fl acq_cache hold_cache vertex_cache locksetg=
 		let ac,hc,lg = processFuns funl ac hc vc lg
 		in 
 			begin
-				let lg' = OP.transitive_closure ~reflexive:false lg in 
-					StringDigraph.iter_vertex (fun v-> printf "%s " (StringDigraph.V.label v)) lg';
-					printf "\n";
-					printf "transitive closure vertex size %d\n" (StringDigraph.nb_vertex lg');
-					printf "transitive closure edge size %d\n" (StringDigraph.nb_edges lg');
-				ac,hc,lg;
+				let lg' = OP.transitive_closure ~reflexive:false lg in
+				StringDigraph.iter_edges (fun v0 v1 -> 
+					let v0' = find_string_vertex lg' (StringDigraph.V.label v0) in 
+					let v1' = find_string_vertex lg' (StringDigraph.V.label v1) in
+					if StringDigraph.mem_edge lg' v1' v0' then  (** cycle between v0 and v1 exists in original graph *)
+					let accu = VertexSet.empty in
+					let res  = VertexSetSet.empty in
+					let newres = search lg v0 v1 v0 3 accu res in
+					VertexSetSet.iter (fun b -> ( VertexSet.iter (fun a-> let a = StringDigraph.V.label a in printf "%s " a))  b) newres					
+					) lg
 			end
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			

@@ -134,6 +134,15 @@ let rec search g src tgt cur k path res=
 		let path = VertexSet.add sc path in
 		search g src tgt sc (k-1) path res) res succlst
 	);;
+	
+
+	
+let create_yices_file paths = 
+	let oc = open_out "main.y" in
+	VertexSetSet.iter (fun b -> 
+		( VertexSet.iter (fun a-> let a = StringDigraph.V.label a in fprintf oc "%s \n" a))  b; (** variable declaration **)
+		) paths;
+	close_out oc;;
 
 let funl = globalFundec f.globals in
 let rec processFuns fl acq_cache hold_cache vertex_cache locksetg= 
@@ -149,20 +158,29 @@ let rec processFuns fl acq_cache hold_cache vertex_cache locksetg=
 		let ac=StringMap.empty 
 		in let hc=StringMap.empty 
 		in let lg= StringDigraph.create() 
-		in let vc = StringMap.empty   (** Cache all the vertex in avoidance fo duplicate by label **)
+		in let vc = StringMap.empty   (** Cache all the vertex in avoidance of duplicate by label **)
 		in 
 		let ac,hc,lg = processFuns funl ac hc vc lg
 		in 
 			begin
-				let lg' = OP.transitive_closure ~reflexive:false lg in
-				StringDigraph.iter_edges (fun v0 v1 -> 
-					let v0' = find_string_vertex lg' (StringDigraph.V.label v0) in 
-					let v1' = find_string_vertex lg' (StringDigraph.V.label v1) in
-					if StringDigraph.mem_edge lg' v1' v0' then  (** cycle between v0 and v1 exists in original graph *)
-					let accu = VertexSet.empty in
-					let res  = VertexSetSet.empty in
-					let newres = search lg v0 v1 v0 3 accu res in
-					VertexSetSet.iter (fun b -> ( VertexSet.iter (fun a-> let a = StringDigraph.V.label a in printf "%s " a))  b) newres					
+				let lg' = OP.transitive_closure ~reflexive:false lg in					
+				StringDigraph.iter_vertex 
+					(fun v0 -> 
+						StringDigraph.iter_vertex 
+							(fun v1 -> 
+								if (not (StringDigraph.mem_edge lg v0 v1)) && (StringDigraph.mem_edge lg v1 v0)
+									then 
+									let v0' = find_string_vertex lg' (StringDigraph.V.label v0) in
+									let v1' = find_string_vertex lg' (StringDigraph.V.label v1) in
+									if StringDigraph.mem_edge lg' v0' v1' then (** cycle between v0 and v1 exists in original graph *)
+										let path = VertexSet.empty in
+										let path = VertexSet.add v0 path in
+										let res = VertexSetSet.empty in
+										let res = search lg v0 v1 v0 3 path res in
+										create_yices_file res
+									else ()
+								else ()
+							) lg
 					) lg
 			end
 			

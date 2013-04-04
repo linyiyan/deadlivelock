@@ -134,13 +134,22 @@ let rec search g src tgt cur k path res=
 		let path = VertexSet.add sc path in
 		search g src tgt sc (k-1) path res) res succlst
 	);;
-	
 
 	
 let create_yices_file paths = 
 	let oc = open_out "main.y" in
 	VertexSetSet.iter (fun b -> 
-		( VertexSet.iter (fun a-> let a = StringDigraph.V.label a in fprintf oc "%s \n" a))  b; (** variable declaration **)
+		let rec genlist i ub = if i<ub then (String.concat "" ["v";string_of_int i])::(genlist (i+1) ub) else [] in
+		let varlist = genlist 0 (List.length(VertexSet.elements b)) in
+		let rec v2str l = match l with x::xb -> (StringDigraph.V.label x)::v2str xb | _ -> [] in
+		let vtxstrlist = v2str (VertexSet.elements b)  in
+		let tplist = List.combine varlist vtxstrlist in
+		List.iter (fun a-> match a with (v,s) -> fprintf oc "(define %s::bool)\n" (v)) tplist; (** variable declaration **)
+		fprintf oc "(assert+ (not (and %s)) 10)\n" (String.concat " " varlist);
+		let sl = List.map (fun s-> sprintf "(not %s)" s) varlist in
+			fprintf oc "(assert+ (not (and %s)) 10)\n" (String.concat " " sl);
+		List.iter (fun a-> fprintf oc "(assert+ %s 8)\n" (fst a)) tplist;
+		fprintf oc "(max-sat)";
 		) paths;
 	close_out oc;;
 

@@ -1,4 +1,4 @@
-TARGET="example/deadlock.c"
+TARGET="example/simple/deadlock.c"
 PATH=$PATH:/home/henry/cil-1.6.0/bin
 MYINCLUDE="./include/"
 MAINFILE=main

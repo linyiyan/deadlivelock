@@ -3,6 +3,8 @@ open Printf
 open List
 open Cfg
 open Set
+open Graph
+
 type threadT = { fname : string; }
 
 module ThreadMod = struct
@@ -12,6 +14,8 @@ end
 
 module Ts = Set.Make(ThreadMod)
 module Tss = Set.Make(Ts)
+module Sdg = Imperative.Digraph.Abstract(String)
+module Vs = Set.Make(Sdg.V)
 
 let print_ts ts = 
 	Ts.iter 
@@ -29,6 +33,7 @@ let print_tss tss =
 			end
 		tss;
 		printf"-----------\n"
+		
 		
 		
 let ctc_instr il tss = 
@@ -107,7 +112,7 @@ let rec collect_thread_create stmts tss =
 			| If(_,tpath,fpath,_) -> ctc_if tpath fpath tss
 			| _ -> tss
 			in collect_thread_create xstmts ntss 
-	| _ -> tss		
+	| _ -> tss
 
 class mainVisitor = object
 	inherit nopCilVisitor

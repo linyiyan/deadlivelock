@@ -3,6 +3,7 @@ open Printf
 open List
 open Cfg
 open Set
+open Map
 
 type threadT = { fname : string; }
 
@@ -13,6 +14,7 @@ end
 
 module Ts = Set.Make(ThreadMod)
 module Tss = Set.Make(Ts)
+module Sm = Map.Make(String)
 
 let print_ts ts = 
 	Ts.iter 
@@ -110,18 +112,46 @@ let rec collect_thread_create stmts tss =
 			in collect_thread_create xstmts ntss 
 	| _ -> tss		
 
-class mainVisitor = object
+let markMutexLock ts tfm = ()
+	
+class mainVisitor = object 
 	inherit nopCilVisitor
+	
+	val mutable threadFunm = Sm.empty
+	
+	method vglob (gv : global) : global list visitAction = 
+		match gv with
+		GVar(vinfo , _,_) -> 
+			begin
+				match vinfo.vtype with 
+					| TNamed(typeinfo,_) -> 
+						begin
+							if typeinfo.tname="pthread_mutex_t" 
+								then printf "%s\n" vinfo.vname 
+							else (); 
+							DoChildren;
+						end
+ 					| _ ->  DoChildren;
+			end
+		| _ -> DoChildren;
+		
 	
 	method vfunc (f : fundec) : fundec visitAction = 
 		if f.svar.vname = "main" 
-			then (					
+			then 
+				begin
 					let tss = Tss.empty in
-					let tss = collect_thread_create f.sbody.bstmts tss in 	
-						 print_tss tss; 
-					SkipChildren;
-				)
-		else SkipChildren;
+					let tss = collect_thread_create f.sbody.bstmts tss in
+						Tss.iter (
+							fun elt -> markMutexLock elt threadFunm
+						) tss;
+					DoChildren;
+				end
+		else 
+			begin
+				threadFunm <- Sm.add f.svar.vname f threadFunm; 
+				DoChildren;
+			end
 end
 
 let f = Frontc.parse "deadlock.cil.c" ();;

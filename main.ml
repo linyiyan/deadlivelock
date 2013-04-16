@@ -1,216 +1,129 @@
 open Cil
+open Printf
 open List
 open Cfg
-open Printf
 open Set
-open Graph
-open Map
-open Hashtbl
-open Array
-open String
 
-module StringMap = Map.Make(String)
-module StringSet = Set.Make(String)
-module StringDigraph = Imperative.Digraph.Abstract(String)
-module VertexSet = Set.Make(StringDigraph.V) 
-module VertexSetSet = Set.Make(VertexSet) 
-module OP = Oper.I(StringDigraph)
+type threadT = { fname : string; }
 
-let f=Frontc.parse "deadlock.cil.c" () ;;
-computeFileCFG f ;;
+module ThreadMod = struct
+	type t = threadT
+	let compare = Pervasives.compare
+end
 
-let rec globalFundec gf = 
-	match gf with
-	GFun(fundec , _)::xgf -> fundec :: globalFundec xgf
-	| _::xgf -> globalFundec xgf
-	| _ -> [] ;;
-	
-let create_str_vertex g str vertex_cache = 
-	if StringMap.mem str vertex_cache then (StringMap.find str vertex_cache),vertex_cache
-	else let v=StringDigraph.V.create str in
-		 let vertex_cache = StringMap.add str v vertex_cache in
-		 v,vertex_cache
-	
+module Ts = Set.Make(ThreadMod)
+module Tss = Set.Make(Ts)
 
-let rec markMutexLock instrl lockset acq_cache hold_cache vertex_cache locksetg= 
-	match instrl with
-	Call(_,Lval(lvar),AddrOf(arg)::lst,_)::iistrl
-		-> (
-			match ((fst lvar),(fst arg)) with 
-			(Var(varinfo),Var(arginfo)) ->
-			begin
-				printf "Lval: %s %s \n" varinfo.vname arginfo.vname; 
-				let acq_cache,hold_cache,vertex_cache
-					= 
-					if varinfo.vname = "pthread_mutex_lock" then
-						begin 
-							if StringSet.is_empty lockset then acq_cache,hold_cache,vertex_cache
-							else let acqstr = String.concat "," (StringSet.elements lockset)
-								 in let acqstr = String.concat ";" [acqstr;"mutex_lock";arginfo.vname]
-								 in (
-									printf "acqstr: %s\n" acqstr;
-									let vertex_cache  
-										= 
-										if StringMap.mem arginfo.vname hold_cache then 
-										let s = StringMap.find arginfo.vname hold_cache in
-										let v1,vertex_cache = create_str_vertex locksetg s vertex_cache in
-										let v0,vertex_cache = create_str_vertex locksetg acqstr vertex_cache in
-											begin
-												StringDigraph.add_edge locksetg v0 v1;
-												vertex_cache;
-											end
-									else (vertex_cache) 
-									in
-									let vertex_cache 
-										= StringSet.fold (
-										fun hold cache -> 
-											if StringMap.mem hold acq_cache then 
-												begin
-													let s  = StringMap.find hold acq_cache in
-													let v1,vertex_cache = create_str_vertex locksetg acqstr vertex_cache in
-													let v0,vertex_cache = create_str_vertex locksetg s vertex_cache in
-														begin
-															StringDigraph.add_edge locksetg v0 v1;
-															vertex_cache;
-														end
-												end
-											else (vertex_cache)
-									) lockset vertex_cache
-									in 
-									StringMap.add arginfo.vname acqstr acq_cache , 
-									StringSet.fold (fun s m -> StringMap.add s acqstr m) lockset hold_cache , 
-									vertex_cache;
-									)
-						end
-					else acq_cache,hold_cache,vertex_cache
-				in 
-				let lockset 
-					= 
-					if varinfo.vname = "pthread_mutex_lock" then 
-							StringSet.add arginfo.vname lockset					
-				    else if varinfo.vname = "pthread_mutex_unlock" then 
-						StringSet.remove arginfo.vname lockset
-				    else lockset
-				in	
-					
-					markMutexLock iistrl lockset acq_cache hold_cache vertex_cache locksetg;
-			end
-			|_-> (markMutexLock iistrl lockset acq_cache hold_cache vertex_cache locksetg;)
-		   )
-	|_::iistrl -> (markMutexLock iistrl lockset acq_cache hold_cache vertex_cache locksetg)
-	|_ -> (lockset,acq_cache,hold_cache,vertex_cache,locksetg)
-	
-	
-let rec processStmt stmts lockset acq_cache hold_cache vertex_cache locksetg= 
-	match stmts with
-	s::xstmts -> 
-		begin 
-			match s.skind with
-			| Instr(instrl) 
-			   -> (let lockset,acq_cache,hold_cache,vertex_cache,locksetg 
-						= markMutexLock instrl lockset acq_cache hold_cache vertex_cache locksetg
-				   in let acq_cache,hold_cache,vertex_cache,locksetg 
-						= processStmt s.succs lockset acq_cache hold_cache vertex_cache locksetg 
-				   in acq_cache,hold_cache,vertex_cache,locksetg)
-			|_ -> (let acq_cache,hold_cache,vertex_cache,locksetg 
-						= processStmt s.succs lockset acq_cache hold_cache vertex_cache locksetg
-				   in acq_cache,hold_cache,vertex_cache,locksetg)
+let print_ts ts = 
+	Ts.iter 
+		begin
+			fun eelt -> printf "%s " eelt.fname
 		end
-	| _ -> acq_cache,hold_cache,vertex_cache,locksetg;;
-	
-exception Found of StringDigraph.V.t
-let find_string_vertex g i =
-    try
-      StringDigraph.iter_vertex (fun v -> if StringDigraph.V.label v = i then raise (Found v)) g;
-      raise Not_found
-    with Found v -> v;;
-	
-let rec search g src tgt cur k path res= 
-	if(k>0 && tgt=cur) then (VertexSetSet.add path res)
-	else if (k<=0) then (VertexSetSet.empty)
-	else (
-	let succlst = StringDigraph.succ g cur in
-	List.fold_left (fun res sc -> 
-		let path = VertexSet.add sc path in
-		search g src tgt sc (k-1) path res) res succlst
-	);;
+		ts
 
-	
-let create_yices_file paths = 
-	let oc = open_out "main.y" in
-	VertexSetSet.iter (fun b -> 
-		let rec genlist i ub = if i<ub then (String.concat "" ["v";string_of_int i])::(genlist (i+1) ub) else [] in
-		let varlist = genlist 0 (List.length(VertexSet.elements b)) in
-		let rec v2str l = match l with x::xb -> (StringDigraph.V.label x)::v2str xb | _ -> [] in
-		let vtxstrlist = v2str (VertexSet.elements b)  in
-		let tplist = List.combine varlist vtxstrlist in
-		List.iter (fun a-> match a with (v,s) -> fprintf oc "(define %s::bool)\n" (v)) tplist; (** variable declaration **)
-		fprintf oc "(assert+ (not (and %s)) 10)\n" (String.concat " " varlist);
-		let sl = List.map (fun s-> sprintf "(not %s)" s) varlist in
-			fprintf oc "(assert+ (not (and %s)) 10)\n" (String.concat " " sl);
-		List.iter (fun a-> fprintf oc "(assert+ %s 8)\n" (fst a)) tplist;
-		fprintf oc "(max-sat)";
-		) paths;
-	close_out oc;;
-
-let funl = globalFundec f.globals in
-let rec processFuns fl acq_cache hold_cache vertex_cache locksetg= 
-	let lockset = StringSet.empty in (** Assume lockset is empty on each entry of thread function **)	
-	match fl with
-		f::xfl -> (let acq_cache,hold_cache,vertex_cache,locksetg 
-						= processStmt f.sallstmts lockset acq_cache hold_cache vertex_cache locksetg
-					in let acq_cache,hold_cache,locksetg 
-						= processFuns xfl acq_cache hold_cache vertex_cache locksetg 
-					in acq_cache,hold_cache,locksetg)
-		| _-> acq_cache,hold_cache,locksetg
-	in
-		let ac=StringMap.empty 
-		in let hc=StringMap.empty 
-		in let lg= StringDigraph.create() 
-		in let vc = StringMap.empty   (** Cache all the vertex in avoidance of duplicate by label **)
-		in 
-		let ac,hc,lg = processFuns funl ac hc vc lg
-		in 
+let print_tss tss = 
+		Tss.iter 
 			begin
-				let lg' = OP.transitive_closure ~reflexive:false lg in					
-				StringDigraph.iter_vertex 
-					(fun v0 -> 
-						StringDigraph.iter_vertex 
-							(fun v1 -> 
-								if (not (StringDigraph.mem_edge lg v0 v1)) && (StringDigraph.mem_edge lg v1 v0)
-									then 
-									let v0' = find_string_vertex lg' (StringDigraph.V.label v0) in
-									let v1' = find_string_vertex lg' (StringDigraph.V.label v1) in
-									if StringDigraph.mem_edge lg' v0' v1' then (** cycle between v0 and v1 exists in original graph *)
-										let path = VertexSet.empty in
-										let path = VertexSet.add v0 path in
-										let res = VertexSetSet.empty in
-										let res = search lg v0 v1 v0 3 path res in
-										create_yices_file res
-									else ()
-								else ()
-							) lg
-					) lg
+				fun elt -> 
+				print_ts elt;
+				printf "\n"
 			end
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
+		tss;
+		printf"-----------\n"
+		
+		
+let ctc_instr il tss = 
+	let ilset = Ts.empty in
+	let ilset = List.fold_left 
+		begin
+			fun ilset a -> 
+			match a with
+			| Call(_,Lval(lv),a1::a2::AddrOf(arg)::arglst,_) -> 
+				begin
+					match ((fst lv),(fst arg)) with 
+					| (Var(varinfo),Var(arginfo)) -> 
+						if varinfo.vname = "pthread_create" 
+							then let nthrd = {fname = arginfo.vname} 
+								in 
+								Ts.add nthrd ilset
+						else 
+								ilset
+					| _ -> ilset
+				end
+			|_ -> ilset
+		end 
+		ilset il
+	in
+	if Ts.is_empty ilset then tss (* ignore instr which is not pthread_create *)
+	else 
+		let ret_tss = Tss.empty in
+		let ret_tss = 
+			if Tss.is_empty tss
+				then Tss.add ilset ret_tss
+			else
+				Tss.fold 
+				begin 
+					fun elt ret_tss -> 
+						if(Ts.is_empty elt) then ret_tss
+						else Tss.add (Ts.union elt ilset) ret_tss
+				end
+				tss ret_tss 
+		in	
+		ret_tss
+	
+let rec ctc_if tpath fpath tss = 
+	let ttss = Tss.empty in
+	let ttss = List.fold_left
+			begin
+				fun ttss elt -> 
+					let ntss = 
+						match elt.skind with
+						Instr(il)-> ctc_instr il tss
+						| If(_,tp,fp,_) -> ctc_if tp fp tss
+						| _ -> tss
+					in Tss.union ntss tss
+			end
+		ttss tpath.bstmts
+	in let ftss = Tss.empty in
+	let ftss = List.fold_left
+			begin
+				fun ftss elt -> 
+					let ntss = 
+						match elt.skind with
+						Instr(il)-> ctc_instr il tss
+						| If(_,tp,fp,_) -> ctc_if tp fp tss
+						| _ -> tss
+					in Tss.union ntss tss
+			end
+		ftss fpath.bstmts
+	in 
+	Tss.union ttss ftss
+
+let rec collect_thread_create stmts tss = 
+	match stmts with
+	s::xstmts 
+		-> let ntss =   
+			match s.skind with
+			| Instr(il) -> ctc_instr il tss
+			| If(_,tpath,fpath,_) -> ctc_if tpath fpath tss
+			| _ -> tss
+			in collect_thread_create xstmts ntss 
+	| _ -> tss		
+
+class mainVisitor = object
+	inherit nopCilVisitor
+	
+	method vfunc (f : fundec) : fundec visitAction = 
+		if f.svar.vname = "main" 
+			then (					
+					let tss = Tss.empty in
+					let tss = collect_thread_create f.sbody.bstmts tss in 	
+						 print_tss tss; 
+					SkipChildren;
+				)
+		else SkipChildren;
+end
+
+let f = Frontc.parse "deadlock.cil.c" ();;
+
+visitCilFileSameGlobals (new mainVisitor) f

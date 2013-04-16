@@ -7,6 +7,8 @@ static pthread_mutex_t mtx1 = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mtx2 = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mtx3 = PTHREAD_MUTEX_INITIALIZER;
 
+
+
 static void *                  
 threadFunc1(void *arg)
 {
@@ -58,10 +60,25 @@ threadFunc3(void *arg)
 int
 main(int argc, char *argv[])
 {
-    pthread_t t1, t2 , t3;
+
+	pthread_t t1, t2 , t3;
+    int loops = 100000;
+	
+	if(argc) pthread_create(&t1, NULL, threadFunc1, &loops);
+	else pthread_create(&t2, NULL, threadFunc2, &loops);
+	
+	pthread_create(&t3, NULL, threadFunc3, &loops);
+	
+	return 1;
+}
+
+	/* pthread_t t1, t2 , t3;
     int loops, s;
 
-    loops = 100000;
+	if(1)
+		loops = 100000;
+	else
+		loops = 10000;
 
     s = pthread_create(&t1, NULL, threadFunc1, &loops);
    
@@ -75,10 +92,9 @@ main(int argc, char *argv[])
 
 	s = pthread_join(t3, NULL);
   
-    printf("glob = %d\n", glob);
-    return 0;
-}
+    printf("glob = %d\n", glob); */
 
+  
 
 
 

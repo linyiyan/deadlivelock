@@ -8,7 +8,7 @@ open Dlgraph
 open Dlthread
 open Lockset
 
-
+module Sm  = Map.Make(String)
 
 class mainVisitor = object 
 	inherit nopCilVisitor

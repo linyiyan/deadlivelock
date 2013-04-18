@@ -17,7 +17,7 @@ class lockGraph = object (self)
 	
 	method set_g ig = g<-ig
 	
-	method create_str_vertex str = 
+	method private create_str_vertex str = 
 		if Sm.mem str vertex_str_cache then Sm.find str vertex_str_cache
 		else let v=Sdg.V.create str in
 			(*  printf "%s\n" str; *)

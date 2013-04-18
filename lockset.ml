@@ -96,7 +96,27 @@ class locksetHelper =
 		| _-> locksetg
 		
 
-	method ml_if tpath fpath locksetg = locksetg
+	method ml_if tpath fpath locksetg = 
+		let locksetg = 
+			List.fold_left 
+			begin
+				fun locksetg elt ->  
+				match elt.skind with
+				| Instr(il) -> self#ml_il il locksetg
+				| If(_,tp,fp,_) -> self#ml_if tp fp locksetg
+				| _ -> locksetg 
+			end locksetg tpath.bstmts  
+		in 
+		let locksetg = 
+			List.fold_left
+			begin
+				fun locksetg elt -> 
+				match elt.skind with
+				| Instr(il) -> self#ml_il il locksetg
+				| If(_,tp,fp,_) -> self#ml_if tp fp locksetg
+				| _ -> locksetg 				
+			end locksetg fpath.bstmts
+		in locksetg
 	
 	method marklockset stmts locksetg = 
 		match stmts with

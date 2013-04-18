@@ -38,7 +38,8 @@ class mainVisitor = object
 				begin
 					let tss = Tss.empty in
 					let tss = collect_thread_create f.sbody.bstmts tss in
-						marklockset_tss tss threadFunm;
+					let graphList = marklockset_tss tss threadFunm in
+					let ()= List.iter (fun g-> printf "%d\n" g#vertex_size)graphList in
 					DoChildren;
 				end
 		else 

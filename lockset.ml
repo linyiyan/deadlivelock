@@ -17,6 +17,11 @@ class locksetHelper =
 	val mutable hold_cache = Sm.empty
 	val mutable lockset = Ss.empty
 	
+	method constr_acqstr lockset acq = 
+		let  acqstr = String.concat "," (Ss.elements lockset)
+		in let acqstr = String.concat ";" [acqstr;"mutex_lock";acq]
+		in acqstr
+	
 	method ml_il il locksetg = 
 		match il with
 		Call(_,Lval(lvar),AddrOf(arg)::lst,_)::xil ->
@@ -29,14 +34,12 @@ class locksetHelper =
 			in
 			let locksetg = (* acq vertex -->  hold cache *)
 			begin				
-				if opr = "pthread_mutex_lock" then
+				if opr = "pthread_mutex_lock" && not (Ss.is_empty lockset) then
 					begin						
-						let acqstr = String.concat "," (Ss.elements lockset)
-						in let acqstr = String.concat ";" [acqstr;"mutex_lock";acq] in
-						printf "acqstr: %s\n" acqstr;
+						let acqstr = self#constr_acqstr lockset acq in
 						if Sm.mem acq hold_cache then							
 							let ss = Sm.find acq hold_cache in
-							let () = Ss.iter (fun s -> locksetg#add_str_edge acqstr s; ()) ss
+							let () = Ss.iter (fun s -> locksetg#add_str_edge acqstr s;()) ss
 							in locksetg
 						else locksetg 
 					end
@@ -45,13 +48,13 @@ class locksetHelper =
 			in
 			let locksetg = (* hold vertices <-- acq cache *)
 			begin
-				if opr = "pthread_mutex_lock" then 
+				if opr = "pthread_mutex_lock" && not (Ss.is_empty lockset) then 
 					begin
 						Ss.iter 
 							(fun hold -> 
 								let acq_strs = if Sm.mem hold acq_cache then Sm.find hold acq_cache else Ss.empty
 								in 
-								Ss.iter (fun acq_str -> locksetg#add_str_edge hold acq_str; ()) acq_strs
+								Ss.iter (fun acq_str -> locksetg#add_str_edge (self#constr_acqstr lockset acq) acq_str; ()) acq_strs
 							) 
 						lockset ;
 					locksetg;
@@ -60,10 +63,33 @@ class locksetHelper =
 				else locksetg 
 			end
 			in
+			let () = (* update acq_cache, hold_cache *)
+				begin
+					if opr = "pthread_mutex_lock" && not (Ss.is_empty lockset) then	
+						begin (* update acq_cache *)
+						if Sm.mem acq acq_cache then 
+							acq_cache <- Sm.add acq (Ss.add (self#constr_acqstr lockset acq) (Sm.find acq acq_cache)) acq_cache
+						else 
+							let ns = Ss.add (self#constr_acqstr lockset acq) (Ss.empty) in 
+							acq_cache <- Sm.add acq ns acq_cache ;
+							
+						Ss.iter (* update hold_cache *)
+							begin
+								fun hold -> 
+									begin
+										if Sm.mem hold hold_cache then
+											hold_cache <- Sm.add hold (Ss.add (self#constr_acqstr lockset acq) (Sm.find hold hold_cache)) hold_cache
+										else 
+											let ns = Ss.add (self#constr_acqstr lockset acq) (Ss.empty) in 
+											hold_cache <- Sm.add hold ns hold_cache;
+									end
+							end lockset
+						end					
+				end
+			in
 			let () = (* update lockset *)
 				if opr = "pthread_mutex_lock" then	lockset<-Ss.add acq lockset		
-				else if opr = "pthread_mutex_unlock" then lockset<-Ss.remove acq lockset
-				else ()			
+				else if opr = "pthread_mutex_unlock" then lockset<-Ss.remove acq lockset						
 			in
 			self#ml_il xil locksetg
 		| _::xil -> self#ml_il xil locksetg

@@ -54,7 +54,7 @@ class locksetHelper =
 							(fun hold -> 
 								let acq_strs = if Sm.mem hold acq_cache then Sm.find hold acq_cache else Ss.empty
 								in 
-								Ss.iter (fun acq_str -> locksetg#add_str_edge (self#constr_acqstr lockset acq) acq_str; ()) acq_strs
+								Ss.iter (fun acq_str -> locksetg#add_str_edge acq_str (self#constr_acqstr lockset acq) ; ()) acq_strs
 							) 
 						lockset ;
 					locksetg;

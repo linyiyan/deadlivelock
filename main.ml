@@ -10,6 +10,7 @@ open Lockset
 
 module Sm = Map.Make(String)
 
+
 let create_yices_file g paths = 
 	let oc = open_out "main.y" in
 	Vss.iter (fun b -> 

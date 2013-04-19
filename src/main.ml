@@ -7,54 +7,11 @@ open Map
 open Dlgraph
 open Dlthread
 open Lockset
-
+open Yicesgen
+open Scanf
 module Sm = Map.Make(String)
 
-let create_yices_file g paths = 
-	let oc = open_out "main.y" in
-	Vss.iter (fun b -> 
-		let rec genlist i ub = if i<ub then (String.concat "" ["v";string_of_int i])::(genlist (i+1) ub) else [] in
-		let varlist = genlist 0 (List.length(Vs.elements b)) in
-		let rec v2str l = match l with x::xb -> (g#label x)::v2str xb | _ -> [] in
-		let vtxstrlist = v2str (Vs.elements b)  in
-		let tplist = List.combine varlist vtxstrlist in
-		List.iter (fun a-> match a with (v,s) -> fprintf oc "(define %s::bool)\n" (v)) tplist; (** variable declaration **)
-		fprintf oc "(assert+ (not (and %s)) 10)\n" (String.concat " " varlist);
-		let sl = List.map (fun s-> sprintf "(not %s)" s) varlist in
-			fprintf oc "(assert+ (not (and %s)) 10)\n" (String.concat " " sl);
-		List.iter (fun a-> fprintf oc "(assert+ %s 8)\n" (fst a)) tplist;
-		fprintf oc "(max-sat)";
-		) paths;
-	close_out oc;;
 
-
-let persist gList = 
-	let () = List.iter
-	begin
-		fun g-> 
-			begin
-			let g' = g#transitive_closure in
-				g#iter_vertex 
-				begin
-					fun v0->
-					g#iter_vertex	
-						begin
-						fun v1-> if not(g#mem_edge v0 v1)&&(g#mem_edge v1 v0)  then							
-							let v0' = g'#find_string_vertex (g#label v0) in
-							let v1' = g'#find_string_vertex (g#label v1) in
-							
-							if g'#mem_edge v0' v1' then
-								let path = Vs.empty in
-								let path = Vs.add v0 path in
-								let res = Vss.empty in
-								let res = g#search v0 v1 v0 3 path res in
-									 create_yices_file g res ;
-									 Vss.iter (fun b -> printf "%d\n" (List.length (Vs.elements b))) res							
-						end
-				end
-			end
-	end gList
-	in ()
 
 class mainVisitor = object (self)
 	inherit nopCilVisitor
@@ -98,8 +55,12 @@ class mainVisitor = object (self)
 				threadFunm <- Sm.add f.svar.vname f threadFunm; 
 				DoChildren;
 			end
-end
+end ;;
 
-let f = Frontc.parse "deadlock.cil.c" ();;
 
+let fstr = Array.get Sys.argv 1 in
+let commstr = sprintf "PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/%s.c -lpthread" fstr in
+let fstr = sprintf "%s.cil.c" fstr in
+let _ = Sys.command commstr in
+let f = (Frontc.parse fstr) () in
 visitCilFileSameGlobals (new mainVisitor) f

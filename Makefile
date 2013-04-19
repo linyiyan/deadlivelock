@@ -1,39 +1,48 @@
 CC=ocamlc
 
 CIL_INCLUDE=../cil-1.6.0/obj/x86_LINUX
+SRC_DIR=./src
 GRAPH=../ocamlgraph
 GRAPH_SRC=../ocamlgraph/src
 GRAPH_LIB=../ocamlgraph/lib
-INCLUDE_VPATH=$(CIL_INCLUDE) $(GRAPH_SRC) $(GRAPH_LIB) $(GRAPH)
-CCOPT_VPATH=$(CIL_INCLUDE) $(GRAPH_SRC) $(GRAPH_LIB) $(GRAPH)
+INCLUDE_VPATH=$(CIL_INCLUDE) $(GRAPH_SRC) $(GRAPH_LIB) $(GRAPH) $(SRC_DIR)
+CCOPT_VPATH=$(CIL_INCLUDE) $(GRAPH_SRC) $(GRAPH_LIB) $(GRAPH) 
 INCLUDE=$(addprefix -I , $(INCLUDE_VPATH))
 CCOPT=$(addprefix -ccopt -L, $(CCOPT_VPATH))
-SRC=./src
 EXE=main
-LIB=unix.cma str.cma nums.cma $(CIL_INCLUDE)/cil.cma $(GRAPH)/graph.cma 
-OBJ=dlgraph.cmo dlthread.cmo lockset.cmo main.cmo
+LIBS=unix.cma str.cma nums.cma $(CIL_INCLUDE)/cil.cma $(GRAPH)/graph.cma 
+OBJS=dlgraph.cmo dlthread.cmo lockset.cmo yicesgen.cmo main.cmo 
 FLAG= -c
 
 all: main
 
-main: $(OBJ)
-	ocamlc -o $(EXE) $(LIB) $(OBJ)
+main: $(OBJS)
+	ocamlc -o $(EXE) $(LIBS) $(addprefix $(SRC_DIR)/, $(OBJS))
 
-dlgraph.cmo : $(SRC)/dlgraph.ml
-	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC)/dlgraph.ml
+dlgraph.cmo : $(SRC_DIR)/dlgraph.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/dlgraph.ml
 
-dlthread.cmo : $(SRC)/dlthread.ml
-	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC)/dlthread.ml
+dlthread.cmo : $(SRC_DIR)/dlthread.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/dlthread.ml
 
-lockset.cmo : $(SRC)/lockset.ml
-	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC)/lockset.ml
+lockset.cmo : $(SRC_DIR)/lockset.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/lockset.ml
 	
-main.cmo : $(SRC)/main.ml
-	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC)/main.ml
+yicesgen.cmo : $(SRC_DIR)/yicesgen.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/yicesgen.ml
 	
-.PHONY : example test1
+main.cmo : $(SRC_DIR)/main.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/main.ml
+	
+.PHONY : example test1 test_ifthenelse1 test_ifthenelse2
 example : 
 	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/deadlock.c -lpthread
 
 test1 : 
 	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/test1.c -lpthread
+	
+test_ifthenelse1 : 
+	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/test_ifthenelse1.c -lpthread
+
+test_ifthenelse2 : 
+	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/test_ifthenelse2.c -lpthread

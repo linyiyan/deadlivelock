@@ -18,17 +18,15 @@ threadFunc1(void *arg)
 		glob += 1;
 		
 		printf("in t1 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx2);
-		pthread_mutex_unlock(&mtx1);
+		pthread_mutex_unlock(&mtx2);		
 	}
 	else{
 		pthread_mutex_lock(&mtx3);
 		glob += 1;		
 		printf("in t1 glob = %d\n", glob);
 		pthread_mutex_unlock(&mtx3);
-		pthread_mutex_unlock(&mtx1);
 	}
-
+	pthread_mutex_unlock(&mtx1);
 
 	return NULL;
 }
@@ -73,7 +71,7 @@ main(int argc, char *argv[])
    
     s = pthread_join(t2, NULL);
 	
-	s = pthread_join(t3, NULL);
+	s = pthread_join(t3, NULL); 
   
     printf("glob = %d\n", glob);
     return 0;

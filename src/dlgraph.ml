@@ -1,6 +1,5 @@
 open Graph
 open Printf
-
 module Sdg = Imperative.Digraph.Abstract(String)
 module Vs  = Set.Make(Sdg.V)
 module Vss = Set.Make(Vs)
@@ -69,6 +68,8 @@ class lockGraph = object (self)
 	
 	method label v = Sdg.V.label v
 			
+	method list_vertices_str = Sdg.fold_vertex (fun v vl -> (Sdg.V.label v)::vl) g []
+	
 	method iter_vertex f = Sdg.iter_vertex (f) g
 	
 	method vertex_size = Sdg.nb_vertex g

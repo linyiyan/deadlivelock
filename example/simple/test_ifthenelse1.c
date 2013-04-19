@@ -49,7 +49,7 @@ int
 main(int argc, char *argv[])
 {
     pthread_t t1, t2;
-    int loops;
+    int loops,s;
 
     s = pthread_create(&t1, NULL, threadFunc1, NULL);
    

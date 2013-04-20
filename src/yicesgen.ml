@@ -37,8 +37,40 @@ let create_yices_file g paths =
 	List.iter (fun a-> fprintf oc "(assert+ %s 8)\n" (snd a)) tplist;
 	fprintf oc "(max-sat)";
 	close_out oc;;
+	
+let enum_paths v0 v1 g g' = 
+	if (* not(g#mem_edge v0 v1)&&*)(g#mem_edge v1 v0) then
+		let v0' = g'#find_string_vertex (g#label v0) in
+		let v1' = g'#find_string_vertex (g#label v1) in
+		if g'#mem_edge v0' v1' then
+			let path = Vs.empty in
+			let path = Vs.add v0 path in
+			let res = Vss.empty in
+			let res = g#search v0 v1 v0 3 path res in res
+		else Vss.empty
+	else Vss.empty	
 
-
+let persist gList = 
+	let () = List.iter
+	begin
+		fun g-> 
+		begin
+		let g' = g#transitive_closure in
+		let vl = g#list_vertices in
+		let res = List.fold_left 
+			begin
+				fun rs v0-> 
+					let tres = List.fold_left
+					begin
+						fun trs v1 -> Vss.union trs (enum_paths v0 v1 g g')						
+					end Vss.empty vl 
+					in Vss.union rs tres
+			end Vss.empty vl
+		in  create_yices_file g res
+		end
+	end gList
+	in ()
+(*
 let persist gList = 
 	let () = List.iter
 	begin
@@ -68,3 +100,5 @@ let persist gList =
 			end
 	end gList
 	in ()
+	
+	*)

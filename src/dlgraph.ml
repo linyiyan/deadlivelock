@@ -65,10 +65,13 @@ class lockGraph = object (self)
 						fun v1 -> if self#mem_edge v0 v1 then printf "%s ----> %s\n" (self#label v0) (self#label v1)
 					end
 			end
+			
 	
 	method label v = Sdg.V.label v
 			
 	method list_vertices_str = Sdg.fold_vertex (fun v vl -> (Sdg.V.label v)::vl) g []
+	
+	method list_vertices = Sdg.fold_vertex (fun v vl -> v::vl) g []
 	
 	method iter_vertex f = Sdg.iter_vertex (f) g
 	

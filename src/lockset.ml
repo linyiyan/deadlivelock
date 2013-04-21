@@ -101,6 +101,7 @@ class locksetHelper =
 		
 
 	method ml_if context tpath fpath locksetg = 
+		let old_lockset = lockset in
 		let locksetg = 
 			List.fold_left 
 			begin
@@ -111,6 +112,7 @@ class locksetHelper =
 				| _ -> locksetg 
 			end locksetg tpath.bstmts  
 		in 
+		lockset <- old_lockset;
 		let locksetg = 
 			List.fold_left
 			begin

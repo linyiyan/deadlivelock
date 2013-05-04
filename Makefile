@@ -34,15 +34,19 @@ yicesgen.cmo : $(SRC_DIR)/yicesgen.ml
 main.cmo : $(SRC_DIR)/main.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/main.ml
 	
-.PHONY : example test1 test_ifthenelse1 test_ifthenelse2
+.PHONY : example test1 test_ifthenelse1 test_ifthenelse2 test_while1
+
 example : 
-	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/deadlock.c -lpthread
+	cilly --save-temps -D HAPPY_MOOD example/simple/deadlock.c -lpthread
 
 test1 : 
-	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/test1.c -lpthread
+	cilly --save-temps -D HAPPY_MOOD example/simple/test1.c -lpthread
 	
 test_ifthenelse1 : 
-	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/test_ifthenelse1.c -lpthread
+	cilly --save-temps -D HAPPY_MOOD example/simple/test_ifthenelse1.c -lpthread
 
 test_ifthenelse2 : 
-	PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/test_ifthenelse2.c -lpthread
+	cilly --save-temps -D HAPPY_MOOD example/simple/test_ifthenelse2.c -lpthread
+	
+test_while1 : 
+	cilly --save-temps -D HAPPY_MOOD example/simple/test_while1.c -lpthread

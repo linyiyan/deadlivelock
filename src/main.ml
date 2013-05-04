@@ -59,7 +59,7 @@ end ;;
 
 
 let fstr = Array.get Sys.argv 1 in
-let commstr = sprintf "PATH=$PATH:/home/henry/cil-1.6.0/bin | export PATH | cilly --save-temps -D HAPPY_MOOD example/simple/%s.c -lpthread" fstr in
+let commstr = sprintf "cilly --save-temps -D HAPPY_MOOD example/simple/%s.c -lpthread" fstr in
 let fstr = sprintf "%s.cil.c" fstr in
 let _ = Sys.command commstr in
 let f = (Frontc.parse fstr) () in

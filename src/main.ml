@@ -41,13 +41,18 @@ class mainVisitor = object (self)
 				begin
 					let tss = Tss.empty in
 					let tss = collect_thread_create f.sbody.bstmts tss in
-					let graphList = marklockset_tss tss threadFunm in
-					let ()= persist graphList in 
-					
-					(* let () = List.iter (fun g-> let g'= g#transitive_closure in 
-												let () = g'#print_edges
-												in g#print_edges) graphList in *)
-												
+					(*let graphList = marklockset_tss tss threadFunm in
+					let ()= persist graphList in 	*)
+					let hlper = new locksetHelper in
+					let graphList = 
+						Tss.fold 
+							begin
+								fun ts graphList -> (hlper#marklockset_ts ts threadFunm) :: graphList
+							end tss []
+					in
+					let n = Sm.cardinal hlper#get_stmt2lockset in 
+					Sm.iter (fun k v -> printf"%s %d\n" k (Ss.cardinal v)) hlper#get_stmt2lockset;
+					let () = persist graphList in
 					DoChildren;
 				end
 		else 

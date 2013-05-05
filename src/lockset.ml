@@ -16,16 +16,24 @@ class locksetHelper =
 	val mutable hold_cache = Sm.empty
 	val mutable lockset = Ss.empty
 	
+	val mutable stmt2lockset = Sm.empty
+	method get_stmt2lockset = stmt2lockset
+	val mutable stmt2sharedvar = Sm.empty
+	val mutable stmt2funcdomain = Sm.empty
+	
+	
 	method constr_acqstr context lockset opr acq = 
 		let  acqstr = String.concat "," (Ss.elements lockset)
 		in let acqstr = String.concat ";" [context.fname;acqstr;opr;acq]
 		in acqstr
 		
-	method is_lock_opr opr = if opr="pthread_mutex_lock" || opr = "pthread_mutex_trylock" then true else false
+	method is_lock_opr opr = opr="pthread_mutex_lock" || opr = "pthread_mutex_trylock"
+	
+	method is_trylock_opr opr = opr="pthread_mutex_trylock"
 	
 	method ml_il context il locksetg = 
 		match il with
-		Call(_,Lval(lvar),AddrOf(arg)::lst,_)::xil ->
+		Call(_,Lval(lvar),AddrOf(arg)::lst,loc)::xil ->
 			let opr,acq = 
 			begin
 				match ((fst lvar),(fst arg)) with 
@@ -34,10 +42,10 @@ class locksetHelper =
 			end
 			in
 			let locksetg = (* acq vertex -->  hold cache *)
-			begin		
-				
+			begin				
 				if (self#is_lock_opr opr) && not (Ss.is_empty lockset) then
 					begin	
+						printf "%s : %d\n" loc.file loc.line;
 						let acqstr = self#constr_acqstr context lockset opr acq in
 						if Sm.mem acq hold_cache then							
 							let ss = Sm.find acq hold_cache in
@@ -93,9 +101,16 @@ class locksetHelper =
 						end					
 				end
 			in
-			let () = (* update lockset *)
-				if (self#is_lock_opr opr) then	lockset<-Ss.add acq lockset		
-				else if opr = "pthread_mutex_unlock" then lockset<-Ss.remove acq lockset						
+			let () = 
+				if (self#is_lock_opr opr) then	
+					begin
+						stmt2lockset<-Sm.add (self#constr_acqstr context lockset opr acq) lockset stmt2lockset;(* update stmt2lockset *)
+						(* update stmt2sharedvar *)
+						(* update stmt2funcdomain *)
+						
+						lockset<-Ss.add acq lockset; (* update lockset *)
+					end
+				else if opr = "pthread_mutex_unlock" then lockset<-Ss.remove acq lockset
 			in
 			self#ml_il context xil locksetg
 		| _::xil -> self#ml_il context xil locksetg
@@ -138,7 +153,7 @@ class locksetHelper =
 					| _ -> locksetg
 				end
 			in (self)#marklockset context xstmts locksetg
-		| _ -> locksetg
+		| [] -> locksetg
 	
 	method marklockset_ts ts tfm = 
 		let locksetg = new lockGraph in

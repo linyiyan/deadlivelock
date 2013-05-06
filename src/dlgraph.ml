@@ -42,7 +42,7 @@ class lockGraph = object (self)
       raise Not_found
     with Found v -> v
 	
-	method search (src : Sdg.V.t) (tgt : Sdg.V.t) (cur : Sdg.V.t) (k : int) (path : Vs.t) (res : Vss.t): Vss.t = 
+	(* method search (src : Sdg.V.t) (tgt : Sdg.V.t) (cur : Sdg.V.t) (k : int) (path : Vs.t) (res : Vss.t): Vss.t = 
 		if(k>0 && tgt=cur) then Vss.add path res
 		else if k<=0 then Vss.empty
 		else 
@@ -55,7 +55,22 @@ class lockGraph = object (self)
 							self#search src tgt sc (k-1) path res
 					end res succlst
 			end
-			
+		*)
+		
+	method search (src : Sdg.V.t) (tgt : Sdg.V.t) (cur : Sdg.V.t) (k : int) (path : Sdg.V.t list) (res : (Sdg.V.t list) list) : (Sdg.V.t list) list= 
+		if(k>0 && tgt=cur) then path::res
+		else if k<=0 then [[]]
+		else
+			begin
+				let succlst = Sdg.succ g cur in 
+				List.fold_left 
+					begin
+						fun res sc -> 
+							let path = sc::path in
+							self#search src tgt sc (k-1) path res
+					end res succlst				
+			end
+		
 	method print_edges = 
 		self#iter_vertex 
 			begin

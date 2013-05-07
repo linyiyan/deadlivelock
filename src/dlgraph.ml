@@ -59,7 +59,7 @@ class lockGraph = object (self)
 		
 	method search (src : Sdg.V.t) (tgt : Sdg.V.t) (cur : Sdg.V.t) (k : int) (path : Sdg.V.t list) (res : (Sdg.V.t list) list) : (Sdg.V.t list) list= 
 		if(k>0 && tgt=cur) then path::res
-		else if k<=0 then [[]]
+		else if k<=0 then []
 		else
 			begin
 				let succlst = Sdg.succ g cur in 

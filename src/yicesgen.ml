@@ -61,6 +61,8 @@ let enum_paths v0 v1 g g' =
 			let res = g#search v0 v1 v0 3 path [] in res
 		else []
 	else []
+
+	
 (*
 let persist gList = 
 	let () = List.iter

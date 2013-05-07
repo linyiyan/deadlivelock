@@ -70,6 +70,7 @@ let gen_cyclic_lock_dep gList =
 
 
 
+
 let gen_cyclic_lock_dep gList = 
 	let deplist = List.fold_left
 	begin
@@ -83,9 +84,14 @@ let gen_cyclic_lock_dep gList =
 					let tres = List.fold_left
 					begin
 						fun trs v1 -> 
-						let vlst = enum_paths v0 v1 g g' in
-						let strlst = vertex_lst_to_str_lst g vlst in 
-						strlst :: trs 
+						let vlsts = enum_paths v0 v1 g g' in
+						let strlsts = List.fold_left
+							begin 
+							fun strlsts vlst -> 
+								let strlst = vertex_lst_to_str_lst g vlst in 
+									strlst :: strlsts
+							end [] vlsts in
+						strlsts :: trs 
 					end [] vl 
 					in tres @ rs
 			end [] vl
@@ -95,7 +101,8 @@ let gen_cyclic_lock_dep gList =
 	in deplist	
 	
 	
-let list_to_set lst = 
+	
+let list_to_set (lst : string list) : Ss.t = 
 	List.fold_left	(fun res str -> Ss.add str res)
 	Ss.empty lst
 
@@ -114,10 +121,21 @@ let list_to_set lst =
 				end
 		end [] deplist
 	in reslist*)
-(***
+
 let gen_unique_cyclic_lock_dep gList = 
 	let deplist = gen_cyclic_lock_dep gList in 
-	let depset = Sss.empty in
+	List.iter 
+	begin
+		fun dep -> 
+			begin
+			List.iter 
+			begin
+				fun d -> printf "%s " d
+			end;	
+			printf "\n";
+			end
+	end deplist
+	(*let depset = Sss.empty in
 	let reslist = List.fold_left
 		begin
 			fun rl dep -> 
@@ -129,8 +147,8 @@ let gen_unique_cyclic_lock_dep gList =
 					dep::rl;
 				end
 		end [] deplist
-	in reslist 
-***)
+	in reslist *)
+
 	
 (* let gen_unique_cyclic_lock_dep gList = 
 	let deplist = gen_cyclic_lock_dep gList in 
@@ -174,8 +192,8 @@ class mainVisitor = object (self)
 								fun ts graphList -> (hlper#marklockset_ts ts threadFunm) :: graphList
 							end tss []
 					in
-					(*let udepList = gen_unique_cyclic_lock_dep graphList
-					in printf "%d\n" (List.length udepList);*)
+					let () = gen_unique_cyclic_lock_dep graphList
+					in 
 					DoChildren;
 				end
 		else 

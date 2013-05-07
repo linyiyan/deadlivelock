@@ -38,7 +38,7 @@ let gen_cyclic_lock_dep gList =
 let vertex_lst_to_str_lst g vlst = 
 	List.fold_left
 	begin
-		fun strlst v -> 
+		fun strlst v -> 		
 		 (g#label v)::strlst
 	end
 	[] vlst
@@ -69,7 +69,9 @@ let gen_cyclic_lock_dep gList =
 *)
 
 
+let print_str_lst lst = List.iter (printf "%s ") lst
 
+let print_str_lsts lsts = List.iter (fun lst -> print_str_lst lst; printf "\n") lsts
 
 let gen_cyclic_lock_dep gList = 
 	let deplist = List.fold_left
@@ -88,17 +90,17 @@ let gen_cyclic_lock_dep gList =
 						let strlsts = List.fold_left
 							begin 
 							fun strlsts vlst -> 
-								let strlst = vertex_lst_to_str_lst g vlst in 
-									strlst :: strlsts
+								let strlst = vertex_lst_to_str_lst g vlst in 								
+									strlst :: strlsts;								
 							end [] vlsts in
-						strlsts :: trs 
+						strlsts @ trs 
 					end [] vl 
-					in tres @ rs
+					in tres @ rs;
 			end [] vl
 		in  res @ deplist
 		end 
 	end [] gList
-	in deplist	
+	in  deplist	
 	
 	
 	
@@ -106,7 +108,7 @@ let list_to_set (lst : string list) : Ss.t =
 	List.fold_left	(fun res str -> Ss.add str res)
 	Ss.empty lst
 
-(*let gen_unique_cyclic_lock_dep gList = 
+let gen_unique_cyclic_lock_dep gList = 
 	let deplist = gen_cyclic_lock_dep gList in
 	let depset = Sss.empty in 
 	let reslist = List.fold_left 
@@ -116,12 +118,12 @@ let list_to_set (lst : string list) : Ss.t =
 				if Sss.mem dep_s depset then reslist
 				else 
 				begin
-					(* Sss.add dep_s depset; *)
+					Sss.add dep_s depset;
 					dep::reslist
 				end
 		end [] deplist
-	in reslist*)
-
+	in reslist 
+(*
 let gen_unique_cyclic_lock_dep gList = 
 	let deplist = gen_cyclic_lock_dep gList in 
 	List.iter 
@@ -131,10 +133,10 @@ let gen_unique_cyclic_lock_dep gList =
 			List.iter 
 			begin
 				fun d -> printf "%s " d
-			end;	
+			end dep;	
 			printf "\n";
 			end
-	end deplist
+	end deplist *)
 	(*let depset = Sss.empty in
 	let reslist = List.fold_left
 		begin
@@ -192,8 +194,9 @@ class mainVisitor = object (self)
 								fun ts graphList -> (hlper#marklockset_ts ts threadFunm) :: graphList
 							end tss []
 					in
-					let () = gen_unique_cyclic_lock_dep graphList
+					let deplstlst = gen_unique_cyclic_lock_dep graphList
 					in 
+					print_str_lsts deplstlst;
 					DoChildren;
 				end
 		else 

@@ -12,14 +12,19 @@ module Ss = Set.Make(String)
 class locksetHelper = 
 	object (self)
 	
-	val mutable acq_cache = Sm.empty
-	val mutable hold_cache = Sm.empty
+	val mutable acq_cache = Sm.empty	
+	val mutable hold_cache = Sm.empty	
 	val mutable lockset = Ss.empty
 	
+	method reset_hold_cache = hold_cache <- Sm.empty
+	method reset_acq_cache = acq_cache <- Sm.empty
+	method reset_lockset = lockset <- Ss.empty
+	
 	val mutable stmt2lockset = Sm.empty
-	method get_stmt2lockset = stmt2lockset
 	val mutable stmt2sharedvar = Sm.empty
 	val mutable stmt2funcdomain = Sm.empty
+	
+	method get_stmt2lockset = stmt2lockset
 	
 	
 	method constr_acqstr context lockset opr acq = 

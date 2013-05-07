@@ -191,7 +191,13 @@ class mainVisitor = object (self)
 					let graphList = 
 						Tss.fold 
 							begin
-								fun ts graphList -> (hlper#marklockset_ts ts threadFunm) :: graphList
+								fun ts graphList -> 
+									begin
+										hlper#reset_acq_cache;
+										hlper#reset_hold_cache;
+										hlper#reset_lockset;
+										(hlper#marklockset_ts ts threadFunm) :: graphList
+									end
 							end tss []
 					in
 					let deplstlst = gen_unique_cyclic_lock_dep graphList

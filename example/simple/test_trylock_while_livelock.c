@@ -12,16 +12,21 @@ threadFunc1(void *arg)
 {
 	int loop = (int)(*((int*)arg));
 	while(loop-- > 0){
-		init: while(pthread_mutex_trylock(&mtx3)!=0){}
+		while(pthread_mutex_trylock(&mtx3)!=0){}
 		pthread_mutex_lock(&mtx1);
 		
 		if(pthread_mutex_trylock(&mtx2)==0){
 			printf("in t1 %d\n" , glob++);
 			pthread_mutex_unlock(&mtx3);
 			pthread_mutex_unlock(&mtx1);
-			goto init;
+			pthread_mutex_unlock(&mtx2);
+		}
+		else {
+			pthread_mutex_unlock(&mtx3);
+			pthread_mutex_unlock(&mtx1);
 		}
 	}
+	
 	return NULL;
 }
 

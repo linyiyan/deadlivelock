@@ -50,7 +50,7 @@ class locksetHelper =
 			begin				
 				if (self#is_lock_opr opr) && not (Ss.is_empty lockset) then
 					begin	
-						printf "%s : %d\n" loc.file loc.line;
+						(*printf "%s : %d\n" loc.file loc.line;*)
 						let acqstr = self#constr_acqstr context lockset opr acq in
 						if Sm.mem acq hold_cache then							
 							let ss = Sm.find acq hold_cache in

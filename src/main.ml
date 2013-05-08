@@ -12,7 +12,6 @@ open Scanf
 module Sm = Map.Make(String)
 module Ss = Set.Make(String)
 module Sss = Set.Make(Ss)
-
 	
 let vertex_lst_to_str_lst g vlst = 
 	List.fold_left
@@ -56,7 +55,22 @@ let gen_cyclic_lock_dep gList =
 	end [] gList
 	in  deplist	
 	
+(*string tokenizer*)
+let rec split_char sep str =
+  try
+    let i = String.index str sep in
+    String.sub str 0 i ::
+      split_char sep (String.sub str (i+1) (String.length str - i - 1))
+  with Not_found ->
+    [str]
 	
+let parse_stmt_str_info (stmt:string) : (string*(string list)*string*string) = 
+	let substrs = split_char ';' stmt in
+	match substrs with 
+	|threadFunc :: hold_locks :: opr :: acq_lock :: [] -> 
+		let hold_locks_lst = split_char ',' hold_locks in
+		(threadFunc,hold_locks_lst,opr,acq_lock)
+	|_->("",[""],"","")
 	
 let list_to_set (lst : string list) : Ss.t = 
 	List.fold_left	(fun res str -> Ss.add str res)
@@ -80,6 +94,24 @@ let rec isSublist (l1 : string list) (l2 : string list) (inComp : bool) : bool =
 let isRotation (l1 : string list) (l2 : string list) : bool = 
 	let nl1 = l1@l1 in
 	isSublist l2 nl1 false
+	
+(* is valid dependency *)
+let isValidDep (dep : string list) : bool = 
+	let rec risValidDep dep funccache holdlockcache= 
+		match dep with
+		| stmt::xdep -> 
+			let (tf,locklst,_,_) = parse_stmt_str_info stmt in 
+				if(Ss.mem tf funccache) || (List.exists (fun lk -> Ss.mem lk holdlockcache) locklst) then false 
+				else 
+					begin
+						let funccache=Ss.add tf funccache in 
+						let holdlockcache=List.fold_left (fun cache lk -> Ss.add lk cache) holdlockcache locklst in
+						risValidDep xdep funccache holdlockcache
+					end
+		| _ -> true
+	in risValidDep dep Ss.empty Ss.empty
+	
+
 
 let gen_unique_cyclic_lock_dep gList = 
 	let deplist = gen_cyclic_lock_dep gList in
@@ -96,28 +128,16 @@ let gen_unique_cyclic_lock_dep gList =
 				end
 		end [] deplist
 	in 
-	List.fold_left
+	let reslist = List.fold_left
 	begin
 		fun rl l -> 
 			l::(List.filter (fun l'-> not (isRotation l' l)) rl)
 	end reslist reslist 
+	in 
+	let reslist = List.filter (fun dep -> isValidDep dep) reslist
+	in reslist
 
-(*string tokenizer*)
-let rec split_char sep str =
-  try
-    let i = String.index str sep in
-    String.sub str 0 i ::
-      split_char sep (String.sub str (i+1) (String.length str - i - 1))
-  with Not_found ->
-    [str]
-	
-let parse_stmt_str_info (stmt:string) : (string*(string list)*string*string) = 
-	let substrs = split_char ';' stmt in
-	match substrs with 
-	|threadFunc :: hold_locks :: opr :: acq_lock :: [] -> 
-		let hold_locks_lst = split_char ',' hold_locks in
-		(threadFunc,hold_locks_lst,opr,acq_lock)
-	|_->("",[""],"","")
+
 
 let find_lock_str (threadFunc: string) (acq_lock : string) (stmtmap : Ss.t Sm.t) : string = 
 	let bindings = Sm.bindings stmtmap in
@@ -149,12 +169,36 @@ let rec count_release_locks (dep:string list) (stmt2lockset : Ss.t Sm.t) (res : 
 			count_release_locks (d2::xdep) stmt2lockset res 
 	| _ -> res
 	
+
+	
 let rec last_elem lst = 
 	match lst with
 	| x::[] -> x
 	| x::xlst -> last_elem xlst
 	
-class mainVisitor = object (self)
+let rec get_prev_elt (elt:string) (lst : string list) : string= 
+	match lst with
+	| e1::e2::xlst -> if elt=e2 then e1 else get_prev_elt elt (e2::xlst)
+	| _ -> ""
+
+let is_deadlivelock_pair (prev_stmt : string) (stmt : string) (func : fundec) : bool = 
+	let (_,_,opr,_) = parse_stmt_str_info stmt in if opr!="pthread_mutex_trylock" then false
+	else
+	let (_,_,_,unlock_lock) = parse_stmt_str_info prev_stmt in false	
+
+let compute_deadlivelock_pairs (func : fundec) (dep : string list) : (string * string) list = 
+	List.fold_left
+		begin
+			fun rs stmt -> 
+			let prev_stmt_in_dep = get_prev_elt stmt ((last_elem dep)::dep) in  
+				if is_deadlivelock_pair prev_stmt_in_dep stmt func then 
+				(prev_stmt_in_dep,stmt)::rs
+				else rs
+		end	[] dep
+	
+
+	
+class mainVisitor file= object (self)
 	inherit nopCilVisitor
 	
 	val mutable threadFunm = Sm.empty
@@ -201,9 +245,17 @@ class mainVisitor = object (self)
 					in 
 					let deplst = List.hd deplstlst in
 					let deplst = (last_elem deplst) :: deplst in
-					(*print_str_lsts deplstlst;*)
+					let deplst = List.tl deplst in
+					print_str_lsts deplstlst;
 					let m = 
 					count_release_locks (deplst) (hlper#get_stmt2lockset) (Sm.empty) in
+					List.iter 
+						begin
+							fun stmt -> 
+								let (tf,_,_,_)=parse_stmt_str_info stmt in 
+								let threadFuncdec = Sm.find tf threadFunm in
+								();
+						end deplst;
 					printf "%d\n" (Sm.cardinal m);
 					DoChildren;
 				end
@@ -220,4 +272,4 @@ let _ = Sys.command commstr in *)
 let fstr = Array.get Sys.argv 1 in
 let fstr = sprintf "%s.cil.c" fstr in
 let f = (Frontc.parse fstr) () in
-visitCilFileSameGlobals (new mainVisitor) f
+visitCilFileSameGlobals (new mainVisitor f) f

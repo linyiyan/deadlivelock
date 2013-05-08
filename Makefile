@@ -34,7 +34,7 @@ yicesgen.cmo : $(SRC_DIR)/yicesgen.ml
 main.cmo : $(SRC_DIR)/main.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/main.ml
 	
-.PHONY : example test1 test_ifthenelse1 test_ifthenelse2 test_while1 test_trylock_unlock_missing
+.PHONY : example test1 test_ifthenelse1 test_ifthenelse2 test_while1 test_trylock_unlock_missing test_trylock_while_livelock
 
 example : 
 	cilly --save-temps -D HAPPY_MOOD example/simple/deadlock.c -lpthread
@@ -53,3 +53,6 @@ test_while1 :
 
 test_trylock_unlock_missing:
 	cilly --save-temps -D HAPPY_MOOD example/simple/test_trylock_unlock_missing.c -lpthread
+
+test_trylock_while_livelock:
+	cilly --save-temps -D HAPPY_MOOD example/simple/test_trylock_while_livelock.c -lpthread

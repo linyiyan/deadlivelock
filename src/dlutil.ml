@@ -3,6 +3,14 @@ open Scanf
 module Sm = Map.Make(String)
 module Ss = Set.Make(String)
 
+
+(*get previous element in the list *)
+let rec get_prev_elt (elt:string) (lst : string list) : string= 
+	match lst with
+	| e1::e2::xlst -> if elt=e2 then e1 else get_prev_elt elt (e2::xlst)
+	| _ -> ""
+	
+
 let print_diff_tuple_list tpl_lst = 
 	List.iter
 	begin

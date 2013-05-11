@@ -11,7 +11,7 @@ INCLUDE=$(addprefix -I , $(INCLUDE_VPATH))
 CCOPT=$(addprefix -ccopt -L, $(CCOPT_VPATH))
 EXE=main
 LIBS=unix.cma str.cma nums.cma $(CIL_INCLUDE)/cil.cma $(GRAPH)/graph.cma 
-OBJS= dlutil.cmo heuristic.cmo dlgraph.cmo dlthread.cmo lockset.cmo yicesgen.cmo main.cmo 
+OBJS= dlutil.cmo heuristic.cmo dlgraph.cmo dlthread.cmo lockset.cmo deadlivelock.cmo yicesgen.cmo main.cmo 
 FLAG= -c
 
 all: main
@@ -33,6 +33,9 @@ dlthread.cmo : $(SRC_DIR)/dlthread.ml
 
 lockset.cmo : $(SRC_DIR)/lockset.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/lockset.ml
+	
+deadlivelock.cmo : $(SRC_DIR)/deadlivelock.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/deadlivelock.ml
 	
 yicesgen.cmo : $(SRC_DIR)/yicesgen.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/yicesgen.ml

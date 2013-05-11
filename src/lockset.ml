@@ -25,6 +25,8 @@ class locksetHelper =
 	val mutable stmt2funcdomain = Sm.empty
 	
 	method get_stmt2lockset = stmt2lockset
+	(* method get_stmt2sharedvar = stmt2sharedvar
+	method get_stmt2funcdomain = stmt2funcdomain *)
 	
 	
 	method constr_acqstr context lockset opr acq = 

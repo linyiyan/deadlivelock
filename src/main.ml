@@ -4,6 +4,8 @@ open List
 open Cfg
 open Set
 open Map
+open Dlutil
+open Heuristic
 open Dlgraph
 open Dlthread
 open Lockset
@@ -55,22 +57,8 @@ let gen_cyclic_lock_dep gList =
 	end [] gList
 	in  deplist	
 	
-(*string tokenizer*)
-let rec split_char sep str =
-  try
-    let i = String.index str sep in
-    String.sub str 0 i ::
-      split_char sep (String.sub str (i+1) (String.length str - i - 1))
-  with Not_found ->
-    [str]
-	
-let parse_stmt_str_info (stmt:string) : (string*(string list)*string*string) = 
-	let substrs = split_char ';' stmt in
-	match substrs with 
-	|threadFunc :: hold_locks :: opr :: acq_lock :: [] -> 
-		let hold_locks_lst = split_char ',' hold_locks in
-		(threadFunc,hold_locks_lst,opr,acq_lock)
-	|_->("",[""],"","")
+
+
 	
 let list_to_set (lst : string list) : Ss.t = 
 	List.fold_left	(fun res str -> Ss.add str res)
@@ -138,43 +126,6 @@ let gen_unique_cyclic_lock_dep gList =
 	in reslist
 
 
-
-let find_lock_str (threadFunc: string) (acq_lock : string) (stmtmap : Ss.t Sm.t) : string = 
-	let bindings = Sm.bindings stmtmap in
-	let rec rfind_lock_str (threadFunc: string) (acq_lock : string) (bindings : (Sm.key*Ss.t) list) : string = 
-		match bindings with
-		| (k,_)::xbindings -> let (tf,_,_,al) = parse_stmt_str_info k in 
-			if tf=threadFunc && al=acq_lock then k
-			else rfind_lock_str (threadFunc) (acq_lock) (xbindings)
-		| _ -> ""
-	in rfind_lock_str threadFunc acq_lock bindings
-	
-(* count #locks need to be release in cyclic dependency *)
-let rec count_release_locks (dep:string list) (stmt2lockset : Ss.t Sm.t) (res : int Sm.t) : (int Sm.t) = 
-	match dep with
-	| d1::d2::xdep -> 
-		let (threadFunc,_,_,rel_lock) = parse_stmt_str_info d1 in 
-		let roll_back_to_str = find_lock_str threadFunc rel_lock stmt2lockset in 
-		if roll_back_to_str="" then 
-			let res = Sm.add d2 1 res in 
-			count_release_locks (d2::xdep) stmt2lockset res 
-		else
-			let (_,hl,_,_) = parse_stmt_str_info d2 in
-			let (_,rhl,_,_) = parse_stmt_str_info roll_back_to_str in 
-			(*let delta = (List.length hl) - (List.length rhl) in *)
-			let lkset1 = Sm.find d2 stmt2lockset in
-			let lkset2 = Sm.find roll_back_to_str stmt2lockset in
-			let delta = Ss.cardinal (Ss.diff lkset1 lkset2) in
-			let res = Sm.add d2 delta res in 
-			count_release_locks (d2::xdep) stmt2lockset res 
-	| _ -> res
-	
-
-	
-let rec last_elem lst = 
-	match lst with
-	| x::[] -> x
-	| x::xlst -> last_elem xlst
 	
 let rec get_prev_elt (elt:string) (lst : string list) : string= 
 	match lst with
@@ -340,9 +291,11 @@ class mainVisitor file= object (self)
 									end
 							end tss []
 					in
-					let deplstlst = gen_unique_cyclic_lock_dep graphList
+					let dep_list = gen_unique_cyclic_lock_dep graphList
 					in 
-					let deplst = List.hd deplstlst in
+					let diff_tuple_lst = recovery_diff dep_list (hlper#get_stmt2lockset) (* (hlper#get_stmt2sharedvar) (hlper#get_stmt2funcdomain) *) in
+					print_diff_tuple_list diff_tuple_lst;
+					(*let deplst = List.hd deplstlst in
 					let deplst = (last_elem deplst) :: deplst in
 					let deplst = List.tl deplst in
 					print_str_lsts deplstlst;
@@ -356,7 +309,7 @@ class mainVisitor file= object (self)
 								compute_deadlivelock_pairs threadFuncdec deplst;
 								();
 						end deplst;
-					printf "%d\n" (Sm.cardinal m);
+					printf "%d\n" (Sm.cardinal m); *)
 					DoChildren;
 				end
 		else 

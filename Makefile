@@ -11,13 +11,19 @@ INCLUDE=$(addprefix -I , $(INCLUDE_VPATH))
 CCOPT=$(addprefix -ccopt -L, $(CCOPT_VPATH))
 EXE=main
 LIBS=unix.cma str.cma nums.cma $(CIL_INCLUDE)/cil.cma $(GRAPH)/graph.cma 
-OBJS=dlgraph.cmo dlthread.cmo lockset.cmo yicesgen.cmo main.cmo 
+OBJS= dlutil.cmo heuristic.cmo dlgraph.cmo dlthread.cmo lockset.cmo yicesgen.cmo main.cmo 
 FLAG= -c
 
 all: main
 
 main: $(OBJS)
 	ocamlc -o $(EXE) $(LIBS) $(addprefix $(SRC_DIR)/, $(OBJS))
+	
+dlutil.cmo : $(SRC_DIR)/dlutil.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/dlutil.ml
+	
+heuristic.cmo : $(SRC_DIR)/heuristic.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/heuristic.ml
 
 dlgraph.cmo : $(SRC_DIR)/dlgraph.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/dlgraph.ml

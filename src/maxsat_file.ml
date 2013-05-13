@@ -18,7 +18,7 @@ let gen_maxsat_file (stmt2satvarname : string Sm.t) (deplist : string list list)
 					let f = fun v n -> (v,n) in
 					let (_,n) = sscanf var_name "%c%d" f in 
 					sprintf "%d %s" n stmt_str
-			end dep_str dep
+			end "" dep
 			in 			
 			let temp1 = sprintf "%d %s 0\n" max_rank temp1 in
 			let temp2 = List.fold_left
@@ -28,7 +28,7 @@ let gen_maxsat_file (stmt2satvarname : string Sm.t) (deplist : string list list)
 					let f = fun v n -> (v,n) in
 					let (_,n) = sscanf var_name "%c%d" f in
 					sprintf "-%d %s" n stmt_str
-			end dep_str dep
+			end "" dep
 			in
 			let temp2 = sprintf "%d %s 0\n" max_rank temp2 
 			in sprintf "%s%s%s" temp1 temp2 dep_str 

@@ -67,7 +67,7 @@ class lockGraph = object (self)
 					begin
 						fun res sc -> 
 							let path = sc::path in (* printf "%s successor %s\n" (Sdg.V.label src)(Sdg.V.label sc); *)
-							(self#search src tgt sc (k-1) path res)@res 
+							(self#search src tgt sc (k-1) path res)@res
 					end res succlst				
 			end
 		
@@ -99,3 +99,14 @@ class lockGraph = object (self)
 	method print_all_edges = Sdg.iter_edges (fun v0 v1 -> printf "%s -> %s\n" (Sdg.V.label v0) (Sdg.V.label v1)) g
 	
 end
+
+let enum_paths v0 v1 g g' = 
+	if (* not(g#mem_edge v0 v1)&&*)(g#mem_edge v1 v0) then
+		let v0' = g'#find_string_vertex (g#label v0) in
+		let v1' = g'#find_string_vertex (g#label v1) in (*printf "%s %s\n" (g'#label v0')(g'#label v1'); g#print_all_edges;*)
+		if g'#mem_edge v0' v1' then 
+			let path = [v0] in (* printf "%s %s\n" (g#label v0)(g#label v1); *)
+			let res = g#search v0 v1 v0 3 path [] in (*printf"res %d " (List.length res);*)res
+		else []
+	else []
+

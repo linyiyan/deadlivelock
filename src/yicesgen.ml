@@ -55,10 +55,10 @@ let enum_paths v0 v1 g g' =
 let enum_paths v0 v1 g g' = 
 	if (* not(g#mem_edge v0 v1)&&*)(g#mem_edge v1 v0) then
 		let v0' = g'#find_string_vertex (g#label v0) in
-		let v1' = g'#find_string_vertex (g#label v1) in printf "%s %s\n" (g'#label v0')(g'#label v1'); g#print_all_edges;
-		if g'#mem_edge v0' v1' then
-			let path = [v0] in 
-			let res = g#search v0 v1 v0 5 path [] in res
+		let v1' = g'#find_string_vertex (g#label v1) in (*printf "%s %s\n" (g'#label v0')(g'#label v1'); g#print_all_edges;*)
+		if g'#mem_edge v0' v1' then 
+			let path = [v0] in (* printf "%s %s\n" (g#label v0)(g#label v1); *)
+			let res = g#search v0 v1 v0 2 path [] in (*printf"res %d " (List.length res);*)res
 		else []
 	else []
 

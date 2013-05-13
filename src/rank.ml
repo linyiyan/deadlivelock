@@ -122,6 +122,8 @@ let get_var_rank (max_rank : int) (lock_var_lst : string list) (trylock_var_lst 
 	let yvar_map = List.fold_left (fun yv_map var -> let dl = Sm.find var decl_map in let yv = mk_var_from_decl ctx dl in Sm.add var yv yv_map) Sm.empty lock_var_list in
 	let lessthan_max_array = Array.init (List.length lock_var_list) (fun i->let vname = List.nth lock_var_list i in let yvar = Sm.find vname yvar_map in mk_lt ctx yvar max_rank_num) in (* every variable less than max rank *)
 	let lessthan_max = if(Array.length lessthan_max_array)>0 then mk_and ctx lessthan_max_array else mk_true ctx in
+	let greaterthan_zero_array = Array.init (List.length lock_var_list)(fun i->let vname = List.nth lock_var_list i in let yvar = Sm.find vname yvar_map in mk_gt ctx yvar (mk_num ctx 0)) in
+	let greaterthan_zero = if(Array.length greaterthan_zero_array)>0 then mk_and ctx greaterthan_zero_array else mk_true ctx in
 	let try_gt_lock_list = 
 	List.fold_left
 	begin
@@ -157,7 +159,7 @@ let get_var_rank (max_rank : int) (lock_var_lst : string list) (trylock_var_lst 
 	in
 	let lock_compare_array = Array.init(List.length lock_compare_list) (fun i->List.nth lock_compare_list i) in
 	let lock_compare = if(Array.length lock_compare_array)>0 then mk_and ctx lock_compare_array else mk_true ctx in
-	let rank_formula = mk_and ctx [| lessthan_max ; try_gt_lock ; lock_compare |] in
+	let rank_formula = mk_and ctx [|greaterthan_zero ; lessthan_max ; try_gt_lock ; lock_compare |] in
 	let _ = assert_retractable ctx rank_formula in
 	let res = 
 		match check ctx with
@@ -172,10 +174,8 @@ let get_var_rank (max_rank : int) (lock_var_lst : string list) (trylock_var_lst 
 					Sm.add lk v_val rm
 			end Sm.empty lock_var_list
 			(* let yval = get_int_value m ydecl in 
-			printf "%d \n" (Int32.to_int yval); *)
-			
-		end
-		
+			printf "%d \n" (Int32.to_int yval); *)			
+		end		
 		| False -> Sm.empty
 		| Undef -> Sm.empty
 	in 

@@ -58,7 +58,7 @@ class lockGraph = object (self)
 		*)
 		
 	method search (src : Sdg.V.t) (tgt : Sdg.V.t) (cur : Sdg.V.t) (k : int) (path : Sdg.V.t list) (res : (Sdg.V.t list) list) : (Sdg.V.t list) list= 
-		if(k>0 && tgt=cur) then path::res
+		if(k>0 && tgt=cur) then ((*printf "path: "; List.iter (fun v -> printf "%s--" (Sdg.V.label v)) path ; printf "\n" ; *) path::res)
 		else if k<=0 then []
 		else
 			begin
@@ -66,8 +66,8 @@ class lockGraph = object (self)
 				List.fold_left 
 					begin
 						fun res sc -> 
-							let path = sc::path in
-							self#search src tgt sc (k-1) path res
+							let path = sc::path in (* printf "%s successor %s\n" (Sdg.V.label src)(Sdg.V.label sc); *)
+							(self#search src tgt sc (k-1) path res)@res 
 					end res succlst				
 			end
 		

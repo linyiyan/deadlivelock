@@ -39,6 +39,9 @@ let gen_cyclic_lock_dep gList =
 								let strlst = vertex_lst_to_str_lst g vlst in 								
 									strlst :: strlsts;								
 							end [] vlsts in
+						(* if (List.length vlsts) > 0 then (printf "enum paths: ";print_str_lsts strlsts; printf "\n") else ();
+						print_str_lsts;
+						printf "\n"; *)
 						strlsts @ trs 
 					end [] vl 
 					in tres @ rs;
@@ -66,7 +69,8 @@ let isValidDep (dep : string list) : bool =
 
 
 let gen_unique_cyclic_lock_dep gList = 
-	let deplist = gen_cyclic_lock_dep gList in
+	(* let () = List.iter (fun g-> g#print_all_edges ; printf "\n ------------- \n") gList in *)
+	let deplist = gen_cyclic_lock_dep gList in (* printf "dependency list\n" ; print_str_lsts deplist; printf "\n"; *)
 	let depset = Sss.empty in 
 	let reslist = List.fold_left 
 		begin
@@ -116,7 +120,7 @@ class mainVisitor file= object (self)
 			then 
 				begin
 					let tss = Tss.empty in
-					let tss = collect_thread_create f.sbody.bstmts tss in print_tss tss;
+					let tss = collect_thread_create f.sbody.bstmts tss in (* print_tss tss; *)
 					(*let graphList = marklockset_tss tss threadFunm in
 					let ()= persist graphList in 	*)
 					let hlper = new locksetHelper in
@@ -132,7 +136,7 @@ class mainVisitor file= object (self)
 									end
 							end tss []
 					in
-					let dep_list = gen_unique_cyclic_lock_dep graphList in 
+					let dep_list = gen_unique_cyclic_lock_dep graphList in print_str_lsts dep_list;
 					let stmt2satvarname = gen_stmt2satvarname dep_list in 
 					let () = List.iter
 						begin

@@ -10,24 +10,13 @@ open Heuristic
 open Dlgraph
 open Dlthread
 open Lockset
+open Rank
 open Yicesgen
 open Scanf
 module Sm = Map.Make(String)
 module Ss = Set.Make(String)
 module Sss = Set.Make(Ss)
 	
-let vertex_lst_to_str_lst g vlst = 
-	List.fold_left
-	begin
-		fun strlst v -> 		
-		 (g#label v)::strlst
-	end
-	[] vlst
-
-
-let print_str_lst lst = List.iter (printf "%s ") lst
-
-let print_str_lsts lsts = List.iter (fun lst -> print_str_lst lst; printf "\n") lsts
 
 let gen_cyclic_lock_dep gList = 
 	let deplist = List.fold_left
@@ -57,32 +46,6 @@ let gen_cyclic_lock_dep gList =
 		end 
 	end [] gList
 	in  deplist	
-	
-
-
-	
-let list_to_set (lst : string list) : Ss.t = 
-	List.fold_left	(fun res str -> Ss.add str res)
-	Ss.empty lst
-	
-(* is l1 sublist of l2*)
-let rec isSublist (l1 : string list) (l2 : string list) (inComp : bool) : bool =
-	match l1,l2 with
-	| x1::xl1,x2::xl2 -> 
-		begin
-			if x1=x2 && inComp then isSublist xl1 xl2 inComp
-			else if x1=x2 && not inComp then isSublist xl1 xl2 true
-			else if x1!=x2 && inComp then false
-			else if x1!=x2 && not inComp  then isSublist l1 xl2 false
-			else false
-		end
-	| [],_ -> inComp
-	| _ -> false
-
-(* is l1 a rotation to l2*)
-let isRotation (l1 : string list) (l2 : string list) : bool = 
-	let nl1 = l1@l1 in
-	isSublist l2 nl1 false
 	
 (* is valid dependency *)
 let isValidDep (dep : string list) : bool = 
@@ -169,7 +132,7 @@ class mainVisitor file= object (self)
 							end tss []
 					in
 					let dep_list = gen_unique_cyclic_lock_dep graphList
-					in 
+					in let stmt2satvarname = gen_stmt2satvarname dep_list in 
 					let () = List.iter
 						begin
 							fun dep -> let dlpair_lst = compute_deadlivelock_pairs (dep) (threadFunm) 
@@ -179,22 +142,9 @@ class mainVisitor file= object (self)
 						end dep_list
 					in 
 					let diff_tuple_lst = recovery_diff dep_list (hlper#get_stmt2lockset) (* (hlper#get_stmt2sharedvar) (hlper#get_stmt2funcdomain) *) in
-					print_diff_tuple_list diff_tuple_lst;
-					(*let deplst = List.hd deplstlst in
-					let deplst = (last_elem deplst) :: deplst in
-					let deplst = List.tl deplst in
-					print_str_lsts deplstlst;
-					let m = 
-					count_release_locks (deplst) (hlper#get_stmt2lockset) (Sm.empty) in
-					List.iter 
-						begin
-							fun stmt -> 
-								let (tf,_,_,_)=parse_stmt_str_info stmt in 
-								let threadFuncdec = Sm.find tf threadFunm in
-								compute_deadlivelock_pairs threadFuncdec deplst;
-								();
-						end deplst;
-					printf "%d\n" (Sm.cardinal m); *)
+					let rank_m = rank (stmt2satvarname) (diff_tuple_lst) in 
+					let rank_m_bindings = Sm.bindings rank_m in
+					let () = List.iter (fun (k,v) -> printf "%s -> %d\n" k v) rank_m_bindings in
 					DoChildren;
 				end
 		else 

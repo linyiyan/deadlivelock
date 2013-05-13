@@ -13,7 +13,7 @@ INCLUDE=$(addprefix -I , $(INCLUDE_VPATH))
 CCOPT=$(addprefix -ccopt -L, $(CCOPT_VPATH))
 EXE=main
 LIBS=unix.cma str.cma nums.cma $(YICES)/ocamlyices.cma $(CIL_INCLUDE)/cil.cma $(GRAPH)/graph.cma 
-OBJS= dlutil.cmo heuristic.cmo dlgraph.cmo dlthread.cmo lockset.cmo deadlivelock.cmo rank.cmo yicesgen.cmo main.cmo
+OBJS= dlutil.cmo heuristic.cmo dlgraph.cmo dlthread.cmo lockset.cmo deadlivelock.cmo rank.cmo maxsat_file.cmo yicesgen.cmo main.cmo
 COBJS = 
 FLAG= -c
 
@@ -48,6 +48,9 @@ z3ocaml.o : $(SRC_DIR)/z3ocaml.c
 	
 rank.cmo : $(SRC_DIR)/rank.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/rank.ml
+	
+maxsat_file.cmo : $(SRC_DIR)/maxsat_file.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/maxsat_file.ml
 	
 yicesgen.cmo : $(SRC_DIR)/yicesgen.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/yicesgen.ml

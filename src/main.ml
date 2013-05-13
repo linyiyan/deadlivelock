@@ -12,6 +12,7 @@ open Dlthread
 open Lockset
 open Rank
 open Yicesgen
+open Maxsat_file
 open Scanf
 module Sm = Map.Make(String)
 module Ss = Set.Make(String)
@@ -145,6 +146,7 @@ class mainVisitor file= object (self)
 					let rank_m = rank (stmt2satvarname) (diff_tuple_lst) in 
 					let rank_m_bindings = Sm.bindings rank_m in
 					let () = List.iter (fun (k,v) -> printf "%s -> %d\n" k v) rank_m_bindings in
+					let () = gen_maxsat_file stmt2satvarname dep_list rank_m in
 					DoChildren;
 				end
 		else 

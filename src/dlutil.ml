@@ -134,7 +134,7 @@ let gen_stmt2satvarname (deplist : string list list) : string Sm.t =
 	end
 	Ss.empty deplist
 	in let res = Sm.empty 
-	in rgen (Ss.elements stmtset) (0) res
+	in rgen (Ss.elements stmtset) (1) res
 
 
 

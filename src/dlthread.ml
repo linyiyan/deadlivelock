@@ -14,6 +14,12 @@ end
 module Ts = Set.Make(ThreadMod)
 module Tss = Set.Make(Ts)
 
+let print_ts (ts : Ts.t) : unit= 
+	Ts.iter (fun tf -> printf "%s " tf.fname) ts
+	
+let print_tss (tss : Tss.t) : unit = 
+	Tss.iter (fun ts -> print_ts ts ; printf "\n") tss
+
 let print_ts ts = 
 	Ts.iter 
 		begin

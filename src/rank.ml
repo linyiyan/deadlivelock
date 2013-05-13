@@ -117,11 +117,11 @@ let get_var_rank (max_rank : int) (lock_var_lst : string list) (trylock_var_lst 
 	let ctx = mk_context () in
 	let itype = mk_type ctx "int" in
 	let max_rank_num = mk_num ctx max_rank in
-	let lock_var_list = lock_var_lst@trylock_var_lst in
+	let lock_var_list = lock_var_lst@trylock_var_lst in 
 	let decl_map = List.fold_left (fun dl_map var -> let dl = mk_var_decl ctx var itype in Sm.add var dl dl_map) Sm.empty lock_var_list in
 	let yvar_map = List.fold_left (fun yv_map var -> let dl = Sm.find var decl_map in let yv = mk_var_from_decl ctx dl in Sm.add var yv yv_map) Sm.empty lock_var_list in
 	let lessthan_max_array = Array.init (List.length lock_var_list) (fun i->let vname = List.nth lock_var_list i in let yvar = Sm.find vname yvar_map in mk_lt ctx yvar max_rank_num) in (* every variable less than max rank *)
-	let lessthan_max = mk_and ctx lessthan_max_array in
+	let lessthan_max = if(Array.length lessthan_max_array)>0 then mk_and ctx lessthan_max_array else mk_true ctx in
 	let try_gt_lock_list = 
 	List.fold_left
 	begin
@@ -180,6 +180,7 @@ let get_var_rank (max_rank : int) (lock_var_lst : string list) (trylock_var_lst 
 		| Undef -> Sm.empty
 	in 
 	res
+	
 
 let rank (stmt2satvarname : string Sm.t) (diff_tuple_lst : (string*string*string) list) : int Sm.t = 
 	let var_num = Sm.cardinal stmt2satvarname in

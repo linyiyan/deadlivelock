@@ -45,4 +45,8 @@ let gen_maxsat_file (stmt2satvarname : string Sm.t) (deplist : string list list)
 	end rank_m res_str in	
 	let clause_num = ((List.length deplist) * 2) + (var_num) in
 	let res_str = sprintf "p wcnf %d %d %d\n%s" var_num clause_num max_rank res_str
-	in printf "%s" res_str
+	in 
+	let oc = open_out "maxsat" in
+	let () = fprintf oc "%s" res_str in
+	let _ = close_out oc in
+	printf "%s" res_str

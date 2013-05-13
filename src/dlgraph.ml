@@ -96,4 +96,6 @@ class lockGraph = object (self)
 	
 	method mem_edge v0 v1 = Sdg.mem_edge g v0 v1
 	
+	method print_all_edges = Sdg.iter_edges (fun v0 v1 -> printf "%s -> %s\n" (Sdg.V.label v0) (Sdg.V.label v1)) g
+	
 end

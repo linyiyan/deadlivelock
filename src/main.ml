@@ -32,7 +32,7 @@ let gen_cyclic_lock_dep gList =
 					let tres = List.fold_left
 					begin
 						fun trs v1 -> 
-						let vlsts = enum_paths v0 v1 g g' in
+						let vlsts = enum_paths v0 v1 g g' in 
 						let strlsts = List.fold_left
 							begin 
 							fun strlsts vlst -> 
@@ -116,7 +116,7 @@ class mainVisitor file= object (self)
 			then 
 				begin
 					let tss = Tss.empty in
-					let tss = collect_thread_create f.sbody.bstmts tss in
+					let tss = collect_thread_create f.sbody.bstmts tss in print_tss tss;
 					(*let graphList = marklockset_tss tss threadFunm in
 					let ()= persist graphList in 	*)
 					let hlper = new locksetHelper in
@@ -132,8 +132,8 @@ class mainVisitor file= object (self)
 									end
 							end tss []
 					in
-					let dep_list = gen_unique_cyclic_lock_dep graphList
-					in let stmt2satvarname = gen_stmt2satvarname dep_list in 
+					let dep_list = gen_unique_cyclic_lock_dep graphList in 
+					let stmt2satvarname = gen_stmt2satvarname dep_list in 
 					let () = List.iter
 						begin
 							fun dep -> let dlpair_lst = compute_deadlivelock_pairs (dep) (threadFunm) 
@@ -146,7 +146,7 @@ class mainVisitor file= object (self)
 					let rank_m = rank (stmt2satvarname) (diff_tuple_lst) in 
 					let rank_m_bindings = Sm.bindings rank_m in
 					let () = List.iter (fun (k,v) -> printf "%s -> %d\n" k v) rank_m_bindings in
-					let () = gen_maxsat_file stmt2satvarname dep_list rank_m in
+					let () = gen_maxsat_file stmt2satvarname dep_list rank_m in 
 					DoChildren;
 				end
 		else 

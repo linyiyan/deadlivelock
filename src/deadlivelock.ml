@@ -112,7 +112,7 @@ let compute_deadlivelock_pairs (dep : string list) (threadFunm : fundec Sm.t): (
 			fun rs stmt -> 
 			let prev_stmt_in_dep = get_prev_elt stmt ((last_elem dep)::dep) in  
 				if is_deadlivelock_pair prev_stmt_in_dep stmt threadFunm then 
-				(printf "%s,%s\n" prev_stmt_in_dep stmt;
+				( (* printf "%s,%s\n" prev_stmt_in_dep stmt; *)
 				(prev_stmt_in_dep,stmt)::rs)
 				else rs
 		end	[] dep

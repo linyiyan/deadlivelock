@@ -13,7 +13,7 @@ INCLUDE=$(addprefix -I , $(INCLUDE_VPATH))
 CCOPT=$(addprefix -ccopt -L, $(CCOPT_VPATH))
 EXE=main
 LIBS=unix.cma str.cma nums.cma $(YICES)/ocamlyices.cma $(CIL_INCLUDE)/cil.cma $(GRAPH)/graph.cma 
-OBJS= dlutil.cmo heuristic.cmo dlgraph.cmo dlthread.cmo lockset.cmo deadlivelock.cmo rank.cmo maxsat_file.cmo main.cmo
+OBJS= dlutil.cmo heuristic.cmo dlgraph.cmo dlthread.cmo lockset.cmo dependency.cmo deadlivelock.cmo rank.cmo maxsat_file.cmo main.cmo
 COBJS = 
 FLAG= -c
 
@@ -36,6 +36,9 @@ dlthread.cmo : $(SRC_DIR)/dlthread.ml
 
 lockset.cmo : $(SRC_DIR)/lockset.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/lockset.ml
+	
+dependency.cmo : $(SRC_DIR)/dependency.ml
+	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/dependency.ml
 	
 deadlivelock.cmo : $(SRC_DIR)/deadlivelock.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/deadlivelock.ml

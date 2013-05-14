@@ -169,6 +169,9 @@ class locksetHelper =
 				fun elt locksetg
 					-> 
 					let fundec = Sm.find elt.fname tfm in 
+						(*self#reset_acq_cache;
+						self#reset_hold_cache;*)
+						self#reset_lockset;
 						self#marklockset elt fundec.sbody.bstmts locksetg
 			end ts locksetg
 end 			

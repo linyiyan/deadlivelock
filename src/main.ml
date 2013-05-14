@@ -14,84 +14,11 @@ open Rank
 open Yicesgen
 open Maxsat_file
 open Scanf
+open Dependency
 module Sm = Map.Make(String)
 module Ss = Set.Make(String)
 module Sss = Set.Make(Ss)
 	
-
-let gen_cyclic_lock_dep gList = 
-	let deplist = List.fold_left
-	begin
-		fun deplist g-> 
-		begin
-		let g' = g#transitive_closure in
-		let vl = g#list_vertices in
-		let res = List.fold_left 
-			begin
-				fun rs v0-> 
-					let tres = List.fold_left
-					begin
-						fun trs v1 -> 
-						let vlsts = enum_paths v0 v1 g g' in 
-						let strlsts = List.fold_left
-							begin 
-							fun strlsts vlst -> 
-								let strlst = vertex_lst_to_str_lst g vlst in 								
-									strlst :: strlsts;								
-							end [] vlsts in
-						(* if (List.length vlsts) > 0 then (printf "enum paths: ";print_str_lsts strlsts; printf "\n") else ();
-						print_str_lsts;
-						printf "\n"; *)
-						strlsts @ trs 
-					end [] vl 
-					in tres @ rs;
-			end [] vl
-		in  res @ deplist
-		end 
-	end [] gList
-	in  deplist	
-	
-(* is valid dependency *)
-let isValidDep (dep : string list) : bool = 
-	let rec risValidDep dep funccache holdlockcache= 
-		match dep with
-		| stmt::xdep -> 
-			let (tf,locklst,_,_) = parse_stmt_str_info stmt in 
-				if(Ss.mem tf funccache) || (List.exists (fun lk -> Ss.mem lk holdlockcache) locklst) then false 
-				else 
-					begin
-						let funccache=Ss.add tf funccache in 
-						let holdlockcache=List.fold_left (fun cache lk -> Ss.add lk cache) holdlockcache locklst in
-						risValidDep xdep funccache holdlockcache
-					end
-		| _ -> true
-	in risValidDep dep Ss.empty Ss.empty	
-
-
-let gen_unique_cyclic_lock_dep gList = 
-	(* let () = List.iter (fun g-> g#print_all_edges ; printf "\n ------------- \n") gList in *)
-	let deplist = gen_cyclic_lock_dep gList in (* printf "dependency list\n" ; print_str_lsts deplist; printf "\n"; *)
-	let depset = Sss.empty in 
-	let reslist = List.fold_left 
-		begin
-			fun reslist dep -> 
-				let dep_s = list_to_set dep in
-				if Sss.mem dep_s depset then reslist
-				else 
-				begin
-					Sss.add dep_s depset;
-					dep::reslist
-				end
-		end [] deplist
-	in 
-	let reslist = List.fold_left
-	begin
-		fun rl l -> 
-			l::(List.filter (fun l'-> not (isRotation l' l)) rl)
-	end reslist reslist 
-	in 
-	let reslist = List.filter (fun dep -> isValidDep dep) reslist
-	in reslist
 
 class mainVisitor file= object (self)
 	inherit nopCilVisitor
@@ -138,19 +65,26 @@ class mainVisitor file= object (self)
 					in
 					let dep_list = gen_unique_cyclic_lock_dep graphList in print_str_lsts dep_list;
 					let stmt2satvarname = gen_stmt2satvarname dep_list in 
+					let dlpair_lst = 
+					List.fold_left
+					begin
+						fun rs dep ->
+							let pair_lst = compute_deadlivelock_pairs (dep) (threadFunm) in rs@pair_lst
+					end [] dep_list
+					(* in List.iter (fun (s1,s2) -> printf "dlpair : %s || %s\n" (Sm.find s1 stmt2satvarname) (Sm.find s2 stmt2satvarname)) dlpair_lst;
 					let () = List.iter
 						begin
 							fun dep -> let dlpair_lst = compute_deadlivelock_pairs (dep) (threadFunm) 
 								in 
-								let () = List.iter (fun dlpair -> printf "dl pair: %s %s" (fst dlpair) (snd dlpair)) dlpair_lst
+								let () = List.iter (fun dlpair -> printf "dl pair: %s %s\n" (fst dlpair) (snd dlpair)) dlpair_lst
 								in printf "\n"
-						end dep_list
+						end dep_list *)
 					in 
 					let diff_tuple_lst = recovery_diff dep_list (hlper#get_stmt2lockset) (* (hlper#get_stmt2sharedvar) (hlper#get_stmt2funcdomain) *) in
 					let rank_m = rank (stmt2satvarname) (diff_tuple_lst) in 
 					let rank_m_bindings = Sm.bindings rank_m in
 					let () = List.iter (fun (k,v) -> printf "%s -> %d\n" k v) rank_m_bindings in
-					let () = gen_maxsat_file stmt2satvarname dep_list rank_m in 
+					let () = gen_maxsat_file stmt2satvarname dep_list dlpair_lst rank_m in 
 					DoChildren;
 				end
 		else 

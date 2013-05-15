@@ -58,7 +58,7 @@ maxsat_file.cmo : $(SRC_DIR)/maxsat_file.ml
 main.cmo : $(SRC_DIR)/main.ml
 	$(CC) $(INCLUDE) $(CCOPT) $(FLAG) $(SRC_DIR)/main.ml
 	
-.PHONY : example test1 test3 test_ifthenelse1 test_ifthenelse2 test_while1 test_trylock_unlock_missing test_trylock_while_livelock z3_rank_solver test10
+.PHONY : example test1 test3 test_ifthenelse1 test_ifthenelse2 test_while1 test_trylock_unlock_missing test_trylock_while_livelock z3_rank_solver test10 test20 test 20 test_deadlivelock_10
 
 example : 
 	cilly --save-temps -D HAPPY_MOOD example/simple/deadlock.c -lpthread
@@ -71,6 +71,15 @@ test3 :
 	
 test10 : 
 	cilly --save-temps -D HAPPY_MOOD example/simple/test10.c -lpthread
+	
+test20 : 
+	cilly --save-temps -D HAPPY_MOOD example/simple/test20.c -lpthread
+	
+test40 : 
+	cilly --save-temps -D HAPPY_MOOD example/simple/test40.c -lpthread
+
+test_deadlivelock_10:
+	cilly --save-temps -D HAPPY_MOOD example/simple/test_deadlivelock_10.c -lpthread
 	
 test_ifthenelse1 : 
 	cilly --save-temps -D HAPPY_MOOD example/simple/test_ifthenelse1.c -lpthread

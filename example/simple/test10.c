@@ -37,10 +37,10 @@ threadFunc2(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx2);
-		pthread_mutex_lock(&mtx3);
+		pthread_mutex_lock(&mtx1);
 		glob += 1;
 		printf("in t2 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx3);
+		pthread_mutex_unlock(&mtx1);
 		pthread_mutex_unlock(&mtx2);
 	//}
 	return NULL;
@@ -69,10 +69,10 @@ threadFunc4(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx4);
-		pthread_mutex_lock(&mtx5);
+		pthread_mutex_lock(&mtx3);
 		glob += 1;
 		printf("in t1 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx5);
+		pthread_mutex_unlock(&mtx3);
 		pthread_mutex_unlock(&mtx4);
 	//}
 	return NULL;
@@ -86,10 +86,10 @@ threadFunc5(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx5);
-		pthread_mutex_lock(&mtx1);
+		pthread_mutex_lock(&mtx6);
 		glob += 1;
 		printf("in t2 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx1);
+		pthread_mutex_unlock(&mtx6);
 		pthread_mutex_unlock(&mtx5);
 	//}
 	return NULL;
@@ -102,10 +102,10 @@ threadFunc6(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx6);
-		pthread_mutex_lock(&mtx7);
+		pthread_mutex_lock(&mtx5);
 		glob += 1;
 		printf("in t1 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx7);
+		pthread_mutex_unlock(&mtx5);
 		pthread_mutex_unlock(&mtx6);
 	//}
 	return NULL;
@@ -134,10 +134,10 @@ threadFunc8(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx8);
-		pthread_mutex_lock(&mtx9);
+		pthread_mutex_lock(&mtx7);
 		glob += 1;
 		printf("in t2 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx9);
+		pthread_mutex_unlock(&mtx7);
 		pthread_mutex_unlock(&mtx8);
 	//}
 	return NULL;
@@ -150,10 +150,10 @@ threadFunc9(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx9);
-		pthread_mutex_lock(&mtx1);
+		pthread_mutex_lock(&mtx10);
 		glob += 1;
 		printf("in t1 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx1);
+		pthread_mutex_unlock(&mtx10);
 		pthread_mutex_unlock(&mtx9);
 	//}
 	return NULL;
@@ -166,10 +166,10 @@ threadFunc10(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx10);
-		pthread_mutex_lock(&mtx1);
+		pthread_mutex_lock(&mtx9);
 		glob += 1;
 		printf("in t1 glob = %d\n", glob);
-		pthread_mutex_unlock(&mtx1);
+		pthread_mutex_unlock(&mtx9);
 		pthread_mutex_unlock(&mtx10);
 	//}
 	return NULL;
@@ -193,16 +193,16 @@ main(int argc, char *argv[])
    
     s = pthread_create(&t5, NULL, threadFunc5, &loops);
 
-	/*s = pthread_create(&t6, NULL, threadFunc6, &loops);
+	s = pthread_create(&t6, NULL, threadFunc6, &loops);
 	  
    
     s = pthread_create(&t7, NULL, threadFunc7, &loops);
 
 	s = pthread_create(&t8, NULL, threadFunc8, &loops);
 	
-	s = pthread_create(&t9, NULL, threadFunc9, &loops); */
+	s = pthread_create(&t9, NULL, threadFunc9, &loops); 
     
-	//s = pthread_create(&t10, NULL, threadFunc10, &loops); 
+	s = pthread_create(&t10, NULL, threadFunc10, &loops); 
 
     printf("glob = %d\n", glob);
     return 0;

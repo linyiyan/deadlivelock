@@ -11,7 +11,6 @@ open Dlgraph
 open Dlthread
 open Lockset
 open Rank
-open Yicesgen
 open Maxsat_file
 open Scanf
 open Dependency

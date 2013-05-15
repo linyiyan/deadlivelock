@@ -46,6 +46,7 @@ class mainVisitor file= object (self)
 		if f.svar.vname = "main" 
 			then 
 				begin
+					let encode_beg = Sys.time in
 					let tss = Tss.empty in
 					let tss = collect_thread_create f.sbody.bstmts tss in (* print_tss tss; *)
 					(*let graphList = marklockset_tss tss threadFunm in
@@ -83,6 +84,7 @@ class mainVisitor file= object (self)
 					let diff_tuple_lst = recovery_diff dep_list (hlper#get_stmt2lockset) (* (hlper#get_stmt2sharedvar) (hlper#get_stmt2funcdomain) *) in
 					let rank_m = rank (stmt2satvarname) (diff_tuple_lst) in 
 					let rank_m_bindings = Sm.bindings rank_m in
+					let encode_end = Sys.time in printf "encode time %f\n" (encode_end() -. encode_beg());
 					let () = List.iter (fun (k,v) -> printf "%s -> %d\n" k v) rank_m_bindings in
 					let () = gen_maxsat_file stmt2satvarname dep_list dlpair_lst rank_m in 
 					DoChildren;

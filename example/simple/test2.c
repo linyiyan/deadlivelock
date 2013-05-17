@@ -6,6 +6,7 @@ static int glob = 0;
 static pthread_mutex_t mtx1 = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mtx2 = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t mtx3 = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t mtx4 = PTHREAD_MUTEX_INITIALIZER;
 
 static void *                  
 threadFunc1(void *arg)
@@ -46,11 +47,27 @@ threadFunc3(void *arg)
 	int j,s;
 	//for(j=0 ; j<loops ; j++){
 		pthread_mutex_lock(&mtx3);
+		pthread_mutex_lock(&mtx4);
+		glob += 1;
+		printf("in t1 glob = %d\n", glob);
+		pthread_mutex_unlock(&mtx4);
+		pthread_mutex_unlock(&mtx3);
+	//}
+	return NULL;
+}
+
+static void *                  
+threadFunc4(void *arg)
+{
+	int loops = *((int* )arg);
+	int j,s;
+	//for(j=0 ; j<loops ; j++){
+		pthread_mutex_lock(&mtx4);
 		pthread_mutex_lock(&mtx1);
 		glob += 1;
 		printf("in t1 glob = %d\n", glob);
 		pthread_mutex_unlock(&mtx1);
-		pthread_mutex_unlock(&mtx3);
+		pthread_mutex_unlock(&mtx4);
 	//}
 	return NULL;
 }
@@ -58,7 +75,7 @@ threadFunc3(void *arg)
 int
 main(int argc, char *argv[])
 {
-    pthread_t t1, t2 , t3;
+    pthread_t t1, t2 , t3 , t4;
     int loops, s;
 
     loops = 100000;
@@ -68,12 +85,8 @@ main(int argc, char *argv[])
     s = pthread_create(&t2, NULL, threadFunc2, &loops);
 
 	s = pthread_create(&t3, NULL, threadFunc3, &loops);
-  
-    s = pthread_join(t1, NULL);
-   
-    s = pthread_join(t2, NULL);
-
-	s = pthread_join(t3, NULL);
+	
+	s = pthread_create(&t4, NULL, threadFunc4, &loops);
   
     printf("glob = %d\n", glob);
     return 0;
